@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPORTS LIVE APP</title>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --border-color: #30363d;
+            --accent-color: #58a6ff;
+            --success-color: #238636;
+            --text-main: #c9d1d9;
+            --text-dim: #8b949e;
+        }
+
+        body { 
+            background: var(--bg-color); 
+            color: var(--text-main); 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex; flex-direction: column; align-items: center; 
+            margin: 0; padding: 20px; min-height: 100vh;
+        }
+
+        .container { width: 100%; max-width: 480px; }
+
+        .app-header { text-align: center; margin-bottom: 25px; }
+        .app-header h1 { font-size: 24px; color: white; margin: 0; letter-spacing: -0.5px; }
+        .app-header p { font-size: 12px; color: var(--accent-color); margin: 5px 0 0; font-weight: bold; }
+
+        #input-area { 
+            background: var(--card-bg); padding: 20px; 
+            border-radius: 12px; border: 1px solid var(--border-color);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+
+        .search-box { display: flex; gap: 8px; margin-top: 15px; }
+        input { 
+            flex: 1; padding: 12px; background: var(--bg-color); 
+            border: 1px solid var(--border-color); color: white; 
+            border-radius: 8px; font-size: 14px;
+        }
+        .btn { 
+            padding: 0 20px; background: var(--success-color); border: none; 
+            color: white; border-radius: 8px; cursor: pointer; font-weight: 600;
+        }
+
+        .rank-section { margin-top: 25px; }
+        .section-title { font-size: 13px; color: var(--text-dim); margin-bottom: 10px; display: flex; align-items: center; gap: 5px; }
+        .rank-table { 
+            width: 100%; border-collapse: collapse; font-size: 12px; 
+            background: var(--card-bg); border-radius: 8px; overflow: hidden;
+        }
+        .rank-table th { background: #21262d; padding: 10px; color: var(--text-dim); font-weight: 500; }
+        .rank-table td { padding: 10px; border-bottom: 1px solid var(--border-color); text-align: center; }
+        .team-name { text-align: left; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+
+        #main-display { display: none; }
+        .live-card { 
+            background: var(--card-bg); padding: 30px 20px; 
+            border-radius: 16px; border: 1px solid var(--border-color);
+            text-align: center; margin-bottom: 15px;
+        }
+        .match-status { 
+            display: inline-block; padding: 4px 12px; background: #30363d;
+            border-radius: 20px; font-size: 12px; color: #f1e05a; font-weight: bold; margin-bottom: 20px;
+        }
+        .scoreboard { display: flex; justify-content: space-between; align-items: center; }
+        .score-team { width: 35%; }
+        .score-team .name { font-size: 18px; font-weight: 700; margin-top: 10px; }
+        .score-number { font-size: 48px; font-weight: 800; color: white; width: 20%; }
+        .score-vs { color: var(--border-color); font-size: 14px; font-weight: bold; }
+
+        .chat-container { 
+            background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); padding: 15px;
+        }
+        .chat-item { padding: 10px 0; border-bottom: 1px solid #21262d; font-size: 13px; }
+        .chat-user { color: var(--accent-color); font-weight: bold; margin-right: 5px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header class="app-header">
+            <h1>SPORTS LIVE APP</h1>
+            <p>REAL-TIME SCORE TERMINAL</p>
+        </header>
+
+        <div id="input-area">
+            <div class="section-title">🔍 네이버 스포츠 경기 ID를 입력하십시오.</div>
+            <div class="search-box">
+                <input type="text" id="gameId" placeholder="KBO, PL, NBA 등 경기 ID" value="20260402OBSS02026">
+                <button class="btn" onclick="startApp()">LIVE START</button>
+            </div>
+
+            <div class="rank-section">
+                <div class="section-title">📊 KBO 팀 순위</div>
+                <table class="rank-table">
+                    <thead>
+                        <tr>
+                            <th>RK</th>
+                            <th>TEAM</th>
+                            <th>W%</th>
+                            <th>GB</th>
+                            <th>STRK</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rank-tbody">
+                        <tr><td colspan="5" style="color:var(--text-dim); padding:20px;">Loading Rankings...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="main-display">
+            <div class="live-card">
+                <div id="status" class="match-status">CONNECTING...</div>
+                <div class="scoreboard">
+                    <div class="score-team">
+                        <div id="awayName" class="name">원정</div>
+                    </div>
+                    <div id="awayScore" class="score-number">0</div>
+                    <div class="score-vs">VS</div>
+                    <div id="homeScore" class="score-number">0</div>
+                    <div class="score-team">
+                        <div id="homeName" class="name">홈</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-container">
+                <div class="section-title">📢 응원글</div>
+                <div id="inner-list" style="color:var(--text-dim); font-size:13px;">잠시만 기다려주세요...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbzomMFdcihQDi_pVkvYETnP8wqNg6ZnLFB2QVtVqQhXZfjsXovJtbhnU6Ty2DtivBef/exec";
+
+        window.onload = fetchRanking;
+
+        async function fetchRanking() {
+            const rankApi = "https://www.koreabaseball.com/Record/TeamRank/TeamRankDaily.aspx";
+            const tbody = document.getElementById('rank-tbody');
+            
+            try {
+                const res = await fetch(`${GAS_URL}?url=${encodeURIComponent(rankApi)}`);
+                const data = await res.json();
+                
+                if (data.result && data.result.teamRankList) {
+                    tbody.innerHTML = '';
+                    data.result.teamRankList.forEach(item => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td style="color:#f1e05a; font-weight:bold;">${item.rank}</td>
+                            <td class="team-name" style="text-align:left; padding-left:15px;">${item.teamName}</td>
+                            <td>${item.wra}</td>
+                            <td>${item.gameBehind}</td>
+                            <td style="font-size:11px;">${item.continuousGameResult}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (e) {
+                console.error("Ranking Error:", e);
+                tbody.innerHTML = '<tr><td colspan="5" style="color:#ff7b72;">공식 순위 데이터를 불러올 수 없습니다.</td></tr>';
+            }
+        }
+
+        async function updateAll(id) {
+            const scoreUrl = `https://api-gw.sports.naver.com/schedule/games/${id}/game-polling?t=${Date.now()}`;
+            const cheerUrl = `https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json?ticket=sportscheer&templateId=kbaseball_team&pool=cbox7&objectId=${id}&pageSize=5&page=1`;
+
+            try {
+                const [sRes, cRes] = await Promise.all([
+                    fetch(`${GAS_URL}?url=${encodeURIComponent(scoreUrl)}`),
+                    fetch(`${GAS_URL}?url=${encodeURIComponent(cheerUrl)}`)
+                ]);
+
+                const sData = await sRes.json();
+                const game = sData.result.game;
+                
+                if (game) {
+                    document.getElementById('status').innerText = game.statusInfo || 'LIVE';
+                    document.getElementById('awayName').innerText = game.awayTeamName;
+                    document.getElementById('homeName').innerText = game.homeTeamName;
+                    document.getElementById('awayScore').innerText = game.awayTeamScore;
+                    document.getElementById('homeScore').innerText = game.homeTeamScore;
+                }
+
+                const cText = await cRes.text();
+                const jsonStr = cText.substring(cText.indexOf('(') + 1, cText.lastIndexOf(')'));
+                const cData = JSON.parse(jsonStr);
+                const listEl = document.getElementById('inner-list');
+                
+                if (cData.result.commentList && cData.result.commentList.length > 0) {
+                    listEl.innerHTML = '';
+                    cData.result.commentList.slice(0, 5).forEach(c => {
+                        listEl.innerHTML += `<div class="chat-item"><span class="chat-user">${c.userName}</span> ${c.contents}</div>`;
+                    });
+                }
+            } catch (e) { 
+                console.error("Update Failed:", e); 
+            }
+        }
+
+        function startApp() {
+            const id = document.getElementById('gameId').value.trim();
+            if (!id) return;
+            document.getElementById('input-area').style.display = 'none';
+            document.getElementById('main-display').style.display = 'block';
+            
+            updateAll(id);
+            // 3초 간격으로 실시간 데이터 업데이트
+            setInterval(() => updateAll(id), 3000); 
+        }
+    </script>
+</body>
+</html>
