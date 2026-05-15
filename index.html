@@ -4,13 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>국전야구 - KBO 실시간 중계</title>
+    <!-- 파비콘 설정: 야구공 이모지를 활용한 SVG 파비콘 -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚾</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #f4f6f8; overflow-x: hidden; }
         .gukjeon-blue { background-color: #004593; }
         .score-box { font-variant-numeric: tabular-nums; letter-spacing: -1px; }
         
-        /* 다이아몬드 주자 표시 UI */
         .diamond-container {
             position: relative; width: 36px; height: 36px; transform: rotate(45deg);
             margin: 8px;
@@ -30,7 +31,6 @@
             font-weight: 900; color: white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
         
-        /* 애니메이션 효과 */
         @keyframes pulse-light {
             0% { opacity: 1; }
             50% { opacity: 0.5; }
@@ -57,7 +57,6 @@
 </nav>
 
 <main class="max-w-6xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Left: Game Grid -->
     <div class="lg:col-span-2">
         <div id="gameGrid" class="grid grid-cols-1 gap-4">
             <div id="loadingPlaceholder" class="bg-white p-10 rounded-2xl border border-gray-100 shadow-sm text-center text-gray-400 font-bold loading-pulse">
@@ -66,7 +65,6 @@
         </div>
     </div>
 
-    <!-- Right: Standings -->
     <div class="lg:col-span-1">
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden sticky top-20">
             <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
@@ -84,15 +82,12 @@
                     </tr>
                 </thead>
                 <tbody id="rankBody" class="font-bold text-gray-600">
-                    <!-- 순위 데이터 로딩 전 안내 -->
-                    <tr>
-                        <td colspan="5" class="py-10 text-gray-300">순위 정보 로딩 중</td>
-                    </tr>
+                    <tr><td colspan="5" class="py-10 text-gray-300">순위 정보 로딩 중</td></tr>
                 </tbody>
             </table>
         </div>
-        <div id="errorMessage" class="mt-4 p-3 bg-red-50 border border-red-100 text-red-500 text-[11px] rounded-lg hidden">
-            서버 연결에 실패했습니다. GAS 배포 설정(모든 사용자)을 확인해주세요.
+        <div id="errorMessage" class="mt-4 p-3 bg-orange-50 border border-orange-100 text-orange-600 text-[11px] rounded-lg hidden">
+            데이터 수신 지연 중... 잠시만 기다려주세요.
         </div>
     </div>
 </main>
@@ -111,49 +106,27 @@ const TEAM_CONFIG = {
     'WO': { name: '키움', color: '#820024' }
 };
 
-// 사용자가 제공한 GAS 주소
 const GAS_URL = "https://script.google.com/macros/s/AKfycbypqVsdzpcs74iQjtRgbcXeAt3H569Jnw-HqodOaSrZRdOpTzQgh03DDtHcJFEByl3o/exec";
 
-/**
- * GAS 통신 함수 (에러 처리 및 리다이렉션 대응 보강)
- */
-async function fetchFromGAS(action, params = "") {
+async function fetchData(action, params = "") {
     try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8초 타임아웃
-
         const url = `${GAS_URL}?action=${action}${params}&t=${Date.now()}`;
-        const response = await fetch(url, {
-            method: 'GET',
-            mode: 'cors',
-            cache: 'no-cache',
-            signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        
-        const data = await response.json();
-        return data;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Network response was not ok');
+        return await response.json();
     } catch (e) {
-        console.error(`[GAS Fetch Error - ${action}]:`, e);
-        document.getElementById('errorMessage').classList.remove('hidden');
+        console.warn(`Fetch failed for ${action}:`, e);
         return null;
     }
 }
 
-/**
- * 대시보드 업데이트 메인 함수
- */
 async function updateDashboard() {
     const indicator = document.getElementById('syncIndicator');
     if(indicator) indicator.classList.add('animate-ping');
 
-    // 경기 데이터와 순위 데이터를 병렬로 요청
     const [gameData, rankData] = await Promise.all([
-        fetchFromGAS('game', '&gameId=20260515HTSS02026'),
-        fetchFromGAS('rankings')
+        fetchData('game', '&gameId=20260515HTSS02026'),
+        fetchData('rankings')
     ]);
 
     if (gameData && gameData.result && gameData.result.relatedGames) {
@@ -170,9 +143,6 @@ async function updateDashboard() {
     setTimeout(() => { if(indicator) indicator.classList.remove('animate-ping') }, 1000);
 }
 
-/**
- * 경기 목록 렌더링
- */
 function renderGames(games) {
     const grid = document.getElementById('gameGrid');
     if (!grid || !games) return;
@@ -180,15 +150,16 @@ function renderGames(games) {
     const html = games.map(game => {
         const homeTeam = TEAM_CONFIG[game.homeTeamCode] || { name: game.homeTeamName, color: '#999' };
         const awayTeam = TEAM_CONFIG[game.awayTeamCode] || { name: game.awayTeamName, color: '#999' };
-        
-        // 주자 상황 (API 구조에 따라 체크)
         const runners = game.runners || { first: false, second: false, third: false };
+        
+        let channels = game.broadChannel || 'LIVE';
+        channels = channels.split('^').join(', ');
 
         return `
             <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md overflow-hidden">
                 <div class="flex justify-between items-center mb-4">
                     <span class="text-[10px] font-bold text-gray-300 uppercase tracking-tighter">KBO LEAGUE MATCH</span>
-                    <span class="text-[10px] font-black text-white bg-[#004593] px-2 py-0.5 rounded uppercase">${game.stadium} | ${game.broadChannel || 'LIVE'}</span>
+                    <span class="text-[10px] font-black text-white bg-[#004593] px-2 py-0.5 rounded uppercase">${game.stadium} | ${channels}</span>
                 </div>
 
                 <div class="flex justify-between items-center score-box mb-6 px-2">
@@ -236,12 +207,9 @@ function renderGames(games) {
     grid.innerHTML = html;
 }
 
-/**
- * 순위표 렌더링
- */
 function renderRankings(rankings) {
     const rankBody = document.getElementById('rankBody');
-    if (!rankBody || !Array.isArray(rankings)) return;
+    if (!rankBody) return;
     
     rankBody.innerHTML = rankings.slice(0, 10).map(team => `
         <tr class="border-b border-gray-50 hover:bg-gray-50 transition">
@@ -254,21 +222,9 @@ function renderRankings(rankings) {
     `).join('');
 }
 
-// 초기 실행 및 인터벌 설정
 window.onload = function() {
     updateDashboard();
-    // 4초마다 갱신 (실시간 동기화)
-    const intervalId = setInterval(updateDashboard, 4000);
-    
-    // 페이지 가시성 체크 (탭이 활성화되었을 때만 통신하여 부하 방지)
-    document.addEventListener("visibilitychange", () => {
-        if (document.hidden) {
-            console.log("Tab hidden - pause sync");
-        } else {
-            console.log("Tab active - resume sync");
-            updateDashboard();
-        }
-    });
+    setInterval(updateDashboard, 4000);
 }
 </script>
 </body>
