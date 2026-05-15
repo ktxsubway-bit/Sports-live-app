@@ -11,38 +11,40 @@
         .gukjeon-blue { background-color: #004593; }
         .score-box { font-variant-numeric: tabular-nums; letter-spacing: -1px; }
         
-        /* 다이아몬드 베이스 스타일 수정: 실제 야구 중계 화면 기준 배치 */
+        /* 베이스 다이아몬드 스타일 */
         .diamond-container {
             position: relative; 
-            width: 40px; 
-            height: 40px; 
-            margin: 12px;
+            width: 64px; 
+            height: 44px; 
+            margin: 12px auto;
         }
         .base {
             position: absolute; 
-            width: 12px; 
-            height: 12px; 
-            border: 1px solid #e2e8f0;
+            width: 11px; 
+            height: 11px; 
+            border: 2px solid #cbd5e1; /* 비어있는 베이스 테두리 */
             background: #fff; 
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             transform: rotate(45deg);
         }
-        /* 베이스 위치 조정 (중계 화면 표준) */
-        .base-1 { top: 14px; right: 0; }  /* 1루: 우측 */
-        .base-2 { top: 0; left: 14px; }   /* 2루: 중앙 상단 */
-        .base-3 { top: 14px; left: 0; }   /* 3루: 좌측 */
+        /* 다이아몬드 정위치 좌표 */
+        .base-1 { top: 16px; right: 4px; }   /* 1루 */
+        .base-2 { top: 0; left: 26px; }      /* 2루 */
+        .base-3 { top: 16px; left: 4px; }    /* 3루 */
         
+        /* 주자 있음: 파란색으로 변경 */
         .base.active { 
-            background: #ef4444; 
-            border-color: #ef4444; 
-            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
-            transform: rotate(45deg) scale(1.1);
+            background: #2563eb; /* 선명한 파란색 */
+            border-color: #1e40af; 
+            box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);
+            transform: rotate(45deg) scale(1.25);
+            z-index: 10;
         }
         
         .team-logo { 
-            width: 48px; height: 48px; border-radius: 12px; 
+            width: 52px; height: 52px; border-radius: 14px; 
             display: flex; align-items: center; justify-content: center; 
-            font-weight: 900; color: white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            font-weight: 900; color: white; box-shadow: 0 4px 12px -2px rgba(0,0,0,0.15);
         }
         
         @keyframes pulse-light {
@@ -59,7 +61,7 @@
         }
         .lang-select {
             background: transparent;
-            border: 1.5px solid rgba(255, 255, 255, 0.4);
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
             color: white;
             font-size: 13px;
             padding: 6px 32px 6px 12px;
@@ -69,7 +71,7 @@
             appearance: none;
             transition: all 0.2s;
         }
-        .lang-select:hover { border-color: rgba(255, 255, 255, 0.8); background: rgba(255, 255, 255, 0.05); }
+        .lang-select:hover { border-color: rgba(255, 255, 255, 0.7); background: rgba(255, 255, 255, 0.05); }
         .lang-select option { color: #333; background: white; }
         .lang-arrow {
             position: absolute; right: 10px; pointer-events: none;
@@ -93,11 +95,11 @@
             <div class="space-y-1">
                 <div class="flex items-center space-x-3">
                     <h1 class="text-2xl font-black tracking-tight flex items-center" data-i18n="headerTitle">
-                        KBO 실시간 중계 (국전야구 독점)
+                        국전야구
                     </h1>
                 </div>
                 <div class="flex items-center space-x-2 text-blue-300 font-bold italic text-sm">
-                    <span data-i18n="subDate">KBO LEAGUE</span>
+                    <span id="displayDate">KBO LEAGUE</span>
                 </div>
                 <div class="accent-bar"></div>
             </div>
@@ -115,7 +117,7 @@
                     </div>
                     <div class="flex items-center space-x-2 bg-black/20 px-3 py-1.5 rounded-full border border-white/10">
                         <div id="syncIndicator" class="w-2.5 h-2.5 bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)]"></div>
-                        <span id="syncText" class="text-[10px] font-bold uppercase tracking-widest" data-i18n="syncText">SYNCING (4S)</span>
+                        <span id="syncText" class="text-[10px] font-bold uppercase tracking-widest" data-i18n="syncText">LIVE</span>
                     </div>
                 </div>
                 <span id="updateTime" class="text-[10px] text-white/50 font-black tracking-tighter uppercase">SYNC: LOADING...</span>
@@ -137,7 +139,7 @@
         <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden sticky top-6">
             <div class="p-5 border-b bg-slate-50/50 flex justify-between items-center">
                 <span class="font-black text-sm text-slate-700 tracking-tight" data-i18n="standingTitle">실시간 순위</span>
-                <span class="px-2 py-0.5 bg-slate-200 text-slate-500 rounded text-[9px] font-bold uppercase">2026 Season</span>
+                <span id="seasonLabel" class="px-2 py-0.5 bg-slate-200 text-slate-500 rounded text-[9px] font-bold uppercase">Season</span>
             </div>
             <table class="w-full text-xs text-center">
                 <thead>
@@ -161,10 +163,16 @@
 </main>
 
 <script>
+const today = new Date();
+const year = today.getFullYear();
+const month = String(today.getMonth() + 1).padStart(2, '0');
+const day = String(today.getDate()).padStart(2, '0');
+const dateString = `${year}${month}${day}`; 
+const displayDateString = `KBO LEAGUE`;
+
 const I18N = {
     ko: {
         headerTitle: "국전야구",
-        subDate: "KBO LEAGUE",
         syncText: "LIVE",
         loading: "실시간 데이터를 동기화 중입니다...",
         standingTitle: "실시간 순위",
@@ -177,12 +185,12 @@ const I18N = {
         errorMsg: "데이터 수신 지연 중...",
         matchLabel: "KBO LEAGUE MATCH",
         beforeMatch: "경기전",
-        waiting: "대기타석"
+        waiting: "대기타석",
+        noGames: "오늘은 예정된 경기가 없습니다."
     },
     en: {
-        headerTitle: "Kukjeon Baseball",
-        subDate: "KBO LEAGUE",
-        syncText: "LIVE SYNC (4S)",
+        headerTitle: "Gukjeon Baseball",
+        syncText: "LIVE",
         loading: "Syncing real-time data...",
         standingTitle: "Live Standings",
         rank: "RK",
@@ -194,12 +202,12 @@ const I18N = {
         errorMsg: "Data delay...",
         matchLabel: "KBO LEAGUE MATCH",
         beforeMatch: "Scheduled",
-        waiting: "In the Hole"
+        waiting: "In the Hole",
+        noGames: "No games scheduled for today."
     },
     zh: {
-        headerTitle: "KBO 实时转播",
-        subDate: "KBO LEAGUE",
-        syncText: "实时同步 (4秒)",
+        headerTitle: "国展棒球",
+        syncText: "LIVE",
         loading: "正在同步实时数据...",
         standingTitle: "实时排名",
         rank: "排名",
@@ -207,28 +215,29 @@ const I18N = {
         win: "胜",
         loss: "负",
         wpct: "胜率",
-        rankLoading: "排名加载中",
+        rankLoading: "排名加载중",
         errorMsg: "数据接收延迟...",
         matchLabel: "KBO 联盟比赛",
         beforeMatch: "赛前",
-        waiting: "待打席"
+        waiting: "待打席",
+        noGames: "今天没有比赛日程。"
     },
     ja: {
-        headerTitle: "KBO リアルタイム中継",
-        subDate: "KBO LEAGUE",
-        syncText: "リアルタイム同期 (4秒)",
-        loading: "データを同期しています...",
+        headerTitle: "クッジョン野球",
+        syncText: "LIVE",
+        loading: " 데이터를 동기화 중입니다...",
         standingTitle: "リアルタイム順位",
         rank: "順位",
         team: "チーム",
         win: "勝",
         loss: "敗",
         wpct: "勝率",
-        rankLoading: "順位読み込み中",
-        errorMsg: "データ遅延中...",
+        rankLoading: "順위読み込み중",
+        errorMsg: "데이터 지연 중...",
         matchLabel: "KBO リーグ試合",
         beforeMatch: "試合前",
-        waiting: "待機"
+        waiting: "待機",
+        noGames: "本日の試合予定はありません。"
     }
 };
 
@@ -236,7 +245,7 @@ let currentLang = 'ko';
 
 const TEAM_CONFIG = {
     'HT': { name: {ko:'KIA', en:'KIA', zh:'起亚', ja:'KIA'}, color: '#EA0029' },
-    'SS': { name: {ko:'삼성', en:'Samsung', zh:'三星', ja:'サムスン'}, color: '#074CA1' },
+    'SS': { name: {ko:'삼성', en:'Samsung', zh:'삼성', ja:'サムスン'}, color: '#074CA1' },
     'LG': { name: {ko:'LG', en:'LG', zh:'LG', ja:'LG'}, color: '#C30452' },
     'OB': { name: {ko:'두산', en:'Doosan', zh:'斗山', ja:'斗山'}, color: '#131230' },
     'SK': { name: {ko:'SSG', en:'SSG', zh:'SSG', ja:'SSG'}, color: '#CE0E2D' },
@@ -247,6 +256,7 @@ const TEAM_CONFIG = {
     'WO': { name: {ko:'키움', en:'Kiwoom', zh:'英雄', ja:'キウム'}, color: '#820024' }
 };
 
+const TEAM_CODES = ['SSHT', 'OBHH', 'LTKT', 'SKNC', 'LGWO', 'HTSS', 'HHOB', 'KTLT', 'NCSK', 'WOLG'];
 const GAS_URL = "https://script.google.com/macros/s/AKfycbypqVsdzpcs74iQjtRgbcXeAt3H569Jnw-HqodOaSrZRdOpTzQgh03DDtHcJFEByl3o/exec";
 
 function applyTranslations() {
@@ -254,6 +264,8 @@ function applyTranslations() {
         const key = el.getAttribute('data-i18n');
         if (I18N[currentLang][key]) el.innerText = I18N[currentLang][key];
     });
+    document.getElementById('displayDate').innerText = displayDateString;
+    document.getElementById('seasonLabel').innerText = `${year} Season`;
 }
 
 async function fetchData(action, params = "") {
@@ -271,16 +283,24 @@ async function updateDashboard() {
     const indicator = document.getElementById('syncIndicator');
     if(indicator) indicator.classList.add('animate-ping');
 
-    const [gameData, rankData] = await Promise.all([
-        fetchData('game', '&gameId=20260515HTSS02026'),
-        fetchData('rankings')
-    ]);
+    let gameData = null;
+    for (const code of TEAM_CODES) {
+        const testGameId = `${dateString}${code}0${year}`;
+        const data = await fetchData('game', `&gameId=${testGameId}`);
+        if (data && data.result && data.result.relatedGames) {
+            gameData = data;
+            break;
+        }
+    }
 
     if (gameData && gameData.result && gameData.result.relatedGames) {
         renderGames(gameData.result.relatedGames.games);
         document.getElementById('errorMessage').classList.add('hidden');
+    } else {
+        document.getElementById('gameGrid').innerHTML = `<div class="bg-white p-16 rounded-3xl text-center text-slate-400 font-bold">${I18N[currentLang].noGames}</div>`;
     }
 
+    const rankData = await fetchData('rankings');
     if (rankData && Array.isArray(rankData)) renderRankings(rankData);
 
     const now = new Date();
@@ -291,9 +311,11 @@ async function updateDashboard() {
 
 function renderGames(games) {
     const grid = document.getElementById('gameGrid');
-    if (!grid || !games) return;
+    if (!grid || !games || games.length === 0) return;
 
-    const html = games.map(game => {
+    const uniqueGames = games.filter((v, i, a) => a.findIndex(t => t.gameId === v.gameId) === i);
+
+    const html = uniqueGames.map(game => {
         const homeConf = TEAM_CONFIG[game.homeTeamCode] || { name: {ko: game.homeTeamName}, color: '#999' };
         const awayConf = TEAM_CONFIG[game.awayTeamCode] || { name: {ko: game.awayTeamName}, color: '#999' };
         
@@ -311,7 +333,7 @@ function renderGames(games) {
                 <div class="flex justify-between items-center mb-6">
                     <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">${I18N[currentLang].matchLabel}</span>
                     <div class="flex items-center space-x-2">
-                        <span class="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase border border-blue-100">${game.stadium}</span>
+                        <span class="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase border border-blue-100">${game.stadium || 'KBO'}</span>
                         <span class="text-[10px] font-black text-slate-500 bg-slate-100 px-3 py-1 rounded-full uppercase">${channels}</span>
                     </div>
                 </div>
@@ -324,16 +346,16 @@ function renderGames(games) {
 
                     <div class="flex flex-col items-center flex-1">
                         <div class="flex items-center space-x-6 md:space-x-12 mb-2">
-                            <span class="text-4xl md:text-5xl font-black ${game.awayTeamScore > game.homeTeamScore ? 'text-slate-900' : 'text-slate-200'}">${game.awayTeamScore}</span>
+                            <span class="text-5xl md:text-6xl font-black ${game.awayTeamScore > game.homeTeamScore ? 'text-slate-900' : 'text-slate-400'}">${game.awayTeamScore}</span>
                             <div class="flex flex-col items-center">
-                                <span class="bg-red-500 text-white px-3 py-1 rounded-full text-[10px] font-black mb-2 shadow-lg shadow-red-200">${status}</span>
+                                <span class="bg-red-500 text-white px-3 py-1 rounded-full text-[10px] font-black mb-4 shadow-lg shadow-red-200">${status}</span>
                                 <div class="diamond-container">
                                     <div class="base base-1 ${runners.first ? 'active' : ''}"></div>
                                     <div class="base base-2 ${runners.second ? 'active' : ''}"></div>
                                     <div class="base base-3 ${runners.third ? 'active' : ''}"></div>
                                 </div>
                             </div>
-                            <span class="text-4xl md:text-5xl font-black ${game.homeTeamScore > game.awayTeamScore ? 'text-slate-900' : 'text-slate-200'}">${game.homeTeamScore}</span>
+                            <span class="text-5xl md:text-6xl font-black ${game.homeTeamScore > game.awayTeamScore ? 'text-slate-900' : 'text-slate-400'}">${game.homeTeamScore}</span>
                         </div>
                     </div>
 
@@ -346,7 +368,7 @@ function renderGames(games) {
                 <div class="bg-slate-50 rounded-2xl p-4 flex items-center justify-around text-[12px] font-bold border border-slate-100">
                     <div class="flex items-center space-x-3">
                         <span class="w-6 h-6 flex items-center justify-center bg-slate-200 text-slate-500 rounded-lg text-[10px]">P</span>
-                        <span class="text-slate-700 truncate max-w-[100px]">${game.currentPitcherName || game.homeStarterName || '-'}</span>
+                        <span class="text-slate-700 truncate max-w-[100px] font-black">${game.currentPitcherName || game.homeStarterName || '-'}</span>
                     </div>
                     <div class="w-px h-4 bg-slate-200"></div>
                     <div class="flex items-center space-x-3">
@@ -398,7 +420,7 @@ document.getElementById('langSelector').addEventListener('change', (e) => {
 window.onload = function() {
     applyTranslations();
     updateDashboard();
-    setInterval(updateDashboard, 4000);
+    setInterval(updateDashboard, 5000);
 }
 </script>
 </body>
