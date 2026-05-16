@@ -11,36 +11,6 @@
         .gukjeon-blue { background-color: #004593; }
         .score-box { font-variant-numeric: tabular-nums; letter-spacing: -1px; }
         
-        /* 베이스 다이아몬드 스타일 */
-        .diamond-container {
-            position: relative; 
-            width: 64px; 
-            height: 44px; 
-            margin: 12px auto;
-        }
-        .base {
-            position: absolute; 
-            width: 11px; 
-            height: 11px; 
-            border: 2px solid #cbd5e1; /* 비어있는 베이스 테두리 */
-            background: #fff; 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            transform: rotate(45deg);
-        }
-        /* 다이아몬드 정위치 좌표 */
-        .base-1 { top: 16px; right: 4px; }   /* 1루 */
-        .base-2 { top: 0; left: 26px; }      /* 2루 */
-        .base-3 { top: 16px; left: 4px; }    /* 3루 */
-        
-        /* 주자 있음: 파란색으로 변경 */
-        .base.active { 
-            background: #2563eb; /* 선명한 파란색 */
-            border-color: #1e40af; 
-            box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);
-            transform: rotate(45deg) scale(1.25);
-            z-index: 10;
-        }
-        
         .team-logo { 
             width: 52px; height: 52px; border-radius: 14px; 
             display: flex; align-items: center; justify-content: center; 
@@ -77,7 +47,6 @@
             position: absolute; right: 10px; pointer-events: none;
             width: 12px; height: 12px; fill: white;
         }
-
         .accent-bar {
             height: 4px;
             background: #3b82f6;
@@ -167,7 +136,7 @@ const today = new Date();
 const year = today.getFullYear();
 const month = String(today.getMonth() + 1).padStart(2, '0');
 const day = String(today.getDate()).padStart(2, '0');
-const dateString = `${year}${month}${day}`; 
+const dateString = `${year}${month}${day}`;
 const displayDateString = `KBO LEAGUE`;
 
 const I18N = {
@@ -185,7 +154,6 @@ const I18N = {
         errorMsg: "데이터 수신 지연 중...",
         matchLabel: "KBO LEAGUE MATCH",
         beforeMatch: "경기전",
-        waiting: "대기타석",
         noGames: "오늘은 예정된 경기가 없습니다."
     },
     en: {
@@ -202,7 +170,6 @@ const I18N = {
         errorMsg: "Data delay...",
         matchLabel: "KBO LEAGUE MATCH",
         beforeMatch: "Scheduled",
-        waiting: "In the Hole",
         noGames: "No games scheduled for today."
     },
     zh: {
@@ -215,28 +182,26 @@ const I18N = {
         win: "胜",
         loss: "负",
         wpct: "胜率",
-        rankLoading: "排名加载중",
+        rankLoading: "排名加载中",
         errorMsg: "数据接收延迟...",
         matchLabel: "KBO 联盟比赛",
         beforeMatch: "赛前",
-        waiting: "待打席",
         noGames: "今天没有比赛日程。"
     },
     ja: {
         headerTitle: "クッジョン野球",
         syncText: "LIVE",
-        loading: " 데이터를 동기화 중입니다...",
+        loading: "データを同期中...",
         standingTitle: "リアルタイム順位",
         rank: "順位",
         team: "チーム",
         win: "勝",
         loss: "敗",
         wpct: "勝率",
-        rankLoading: "順위読み込み중",
-        errorMsg: "데이터 지연 중...",
+        rankLoading: "順位読み込み中",
+        errorMsg: "データ遅延中...",
         matchLabel: "KBO リーグ試合",
         beforeMatch: "試合前",
-        waiting: "待機",
         noGames: "本日の試合予定はありません。"
     }
 };
@@ -322,9 +287,7 @@ function renderGames(games) {
         const homeName = homeConf.name[currentLang] || homeConf.name['ko'];
         const awayName = awayConf.name[currentLang] || awayConf.name['ko'];
 
-        const runners = game.runners || { first: false, second: false, third: false };
         let channels = (game.broadChannel || 'LIVE').split('^').join(', ');
-
         let status = game.statusInfo || I18N[currentLang].beforeMatch;
         if(status === "경기전") status = I18N[currentLang].beforeMatch;
 
@@ -338,22 +301,17 @@ function renderGames(games) {
                     </div>
                 </div>
 
-                <div class="flex justify-between items-center score-box mb-8 px-4">
+                <div class="flex justify-between items-center score-box px-4">
                     <div class="flex flex-col items-center w-24">
                         <div class="team-logo mb-3 transform group-hover:scale-110 transition-transform" style="background-color: ${awayConf.color}">${game.awayTeamCode}</div>
                         <span class="font-black text-slate-800 text-sm text-center leading-tight">${awayName}</span>
                     </div>
 
                     <div class="flex flex-col items-center flex-1">
-                        <div class="flex items-center space-x-6 md:space-x-12 mb-2">
+                        <div class="flex items-center space-x-6 md:space-x-12">
                             <span class="text-5xl md:text-6xl font-black ${game.awayTeamScore > game.homeTeamScore ? 'text-slate-900' : 'text-slate-400'}">${game.awayTeamScore}</span>
                             <div class="flex flex-col items-center">
-                                <span class="bg-red-500 text-white px-3 py-1 rounded-full text-[10px] font-black mb-4 shadow-lg shadow-red-200">${status}</span>
-                                <div class="diamond-container">
-                                    <div class="base base-1 ${runners.first ? 'active' : ''}"></div>
-                                    <div class="base base-2 ${runners.second ? 'active' : ''}"></div>
-                                    <div class="base base-3 ${runners.third ? 'active' : ''}"></div>
-                                </div>
+                                <span class="bg-red-500 text-white px-4 py-1.5 rounded-full text-[10px] font-black shadow-lg shadow-red-200">${status}</span>
                             </div>
                             <span class="text-5xl md:text-6xl font-black ${game.homeTeamScore > game.awayTeamScore ? 'text-slate-900' : 'text-slate-400'}">${game.homeTeamScore}</span>
                         </div>
@@ -364,22 +322,9 @@ function renderGames(games) {
                         <span class="font-black text-slate-800 text-sm text-center leading-tight">${homeName}</span>
                     </div>
                 </div>
-
-                <div class="bg-slate-50 rounded-2xl p-4 flex items-center justify-around text-[12px] font-bold border border-slate-100">
-                    <div class="flex items-center space-x-3">
-                        <span class="w-6 h-6 flex items-center justify-center bg-slate-200 text-slate-500 rounded-lg text-[10px]">P</span>
-                        <span class="text-slate-700 truncate max-w-[100px] font-black">${game.currentPitcherName || game.homeStarterName || '-'}</span>
-                    </div>
-                    <div class="w-px h-4 bg-slate-200"></div>
-                    <div class="flex items-center space-x-3">
-                        <span class="w-6 h-6 flex items-center justify-center bg-blue-100 text-blue-600 rounded-lg text-[10px]">B</span>
-                        <span class="text-blue-700 font-black underline decoration-blue-200 underline-offset-4 truncate max-w-[100px]">${game.currentBatterName || I18N[currentLang].waiting}</span>
-                    </div>
-                </div>
             </div>
         `;
     }).join('');
-
     grid.innerHTML = html;
 }
 
