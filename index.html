@@ -110,6 +110,30 @@
             transition: 0.2s;
         }
         .close-modal:hover { background: rgba(255, 255, 255, 0.3); }
+
+        /* Date Input Styling */
+        .date-input-container {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 4px 10px;
+            transition: all 0.2s;
+        }
+        .date-input-container:hover {
+            border-color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.18);
+        }
+        .date-picker {
+            background: transparent;
+            color: white;
+            font-weight: bold;
+            font-size: 13px;
+            outline: none;
+            cursor: pointer;
+            color-scheme: dark;
+        }
     </style>
 </head>
 <body class="text-slate-900">
@@ -126,10 +150,14 @@
     <div class="max-w-6xl mx-auto px-6 py-4">
         <div class="flex flex-col md:flex-row md:justify-between md:items-end">
             <div class="space-y-1">
-                <div class="flex items-center space-x-3">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-3">
                     <h1 class="text-2xl font-black tracking-tight flex items-center" data-i18n="headerTitle">
                         국전야구
                     </h1>
+                    <!-- 날짜 선택기 추가 -->
+                    <div class="date-input-container">
+                        <input type="date" id="dateSelector" class="date-picker">
+                    </div>
                 </div>
                 <div class="flex items-center space-x-2 text-blue-300 font-bold italic text-sm">
                     <span id="displayDate">KBO LEAGUE</span>
@@ -200,12 +228,18 @@
 </main>
 
 <script>
+// 오늘 날짜 전역 변수 선언 및 초기화 (ReferenceError 해결)
 const today = new Date();
-const year = today.getFullYear();
-const month = String(today.getMonth() + 1).padStart(2, '0');
-const day = String(today.getDate()).padStart(2, '0');
-const dateString = `${year}${month}${day}`;
+let selectedDate = new Date();
+let dateString = getFormattedDate(selectedDate);
 const displayDateString = `KBO LEAGUE`;
+
+function getFormattedDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}${month}${day}`;
+}
 
 const I18N = {
     ko: {
@@ -222,7 +256,7 @@ const I18N = {
         errorMsg: "데이터 수신 지연 중...",
         matchLabel: "KBO LEAGUE MATCH",
         beforeMatch: "경기전",
-        noGames: "오늘은 예정된 경기가 없습니다.",
+        noGames: "선택하신 날짜에는 예정된 경기가 없습니다.",
         viewLive: "실시간 중계보기"
     },
     en: {
@@ -239,7 +273,7 @@ const I18N = {
         errorMsg: "Data delay...",
         matchLabel: "KBO LEAGUE MATCH",
         beforeMatch: "Scheduled",
-        noGames: "No games scheduled for today.",
+        noGames: "No games scheduled for the selected date.",
         viewLive: "WATCH LIVE"
     },
     zh: {
@@ -256,24 +290,24 @@ const I18N = {
         errorMsg: "数据接收延迟...",
         matchLabel: "KBO 联盟比赛",
         beforeMatch: "赛前",
-        noGames: "今天没有比赛日程。",
+        noGames: "您选择的日期没有比赛日程。",
         viewLive: "观看直播"
     },
     ja: {
         headerTitle: "クッジョン野球",
         syncText: "LIVE",
-        loading: " 데이터를 동기화 중입니다...",
+        loading: " データを同期중...",
         standingTitle: "リアルタイム順位",
         rank: "順位",
         team: "팀",
         win: "勝",
         loss: "敗",
         wpct: "勝率",
-        rankLoading: "順위読み込み중",
+        rankLoading: "順位読み込み中",
         errorMsg: "데이터 지연 중...",
         matchLabel: "KBO リーグ試合",
         beforeMatch: "試合前",
-        noGames: "本日の試合予定はありません。",
+        noGames: "選択された日付に試合予定はありません。",
         viewLive: "ライブ中継"
     }
 };
@@ -287,7 +321,7 @@ const TEAM_CONFIG = {
     'OB': { name: {ko:'두산', en:'Doosan', zh:'斗山', ja:'斗山'}, color: '#131230' },
     'SK': { name: {ko:'SSG', en:'SSG', zh:'SSG', ja:'SSG'}, color: '#CE0E2D' },
     'NC': { name: {ko:'NC', en:'NC', zh:'NC', ja:'NC'}, color: '#071D3D' },
-    'HH': { name: {ko:'한화', en:'Hanwha', zh:'韩华', ja:'ハンファ'}, color: '#FF6600' },
+    'HH': { name: {ko:'한화', en:'Hanwha', zh:'韩화', ja:'ハンファ'}, color: '#FF6600' },
     'LT': { name: {ko:'롯데', en:'Lotte', zh:'乐天', ja:'ロッテ'}, color: '#041E42' },
     'KT': { name: {ko:'KT', en:'KT', zh:'KT', ja:'KT'}, color: '#000000' },
     'WO': { name: {ko:'키움', en:'Kiwoom', zh:'英雄', ja:'キウム'}, color: '#820024' }
@@ -302,15 +336,15 @@ function openLiveModal() {
     const iframe = document.getElementById('liveFrame');
     iframe.src = "https://superpangtv.com/sportstv";
     modal.style.display = 'block';
-    document.body.style.overflow = 'hidden'; // 스크롤 방지
+    document.body.style.overflow = 'hidden';
 }
 
 function closeLiveModal() {
     const modal = document.getElementById('liveModal');
     const iframe = document.getElementById('liveFrame');
-    iframe.src = ""; // 중계 중지
+    iframe.src = "";
     modal.style.display = 'none';
-    document.body.style.overflow = 'auto'; // 스크롤 허용
+    document.body.style.overflow = 'auto';
 }
 
 function applyTranslations() {
@@ -319,7 +353,7 @@ function applyTranslations() {
         if (I18N[currentLang][key]) el.innerText = I18N[currentLang][key];
     });
     document.getElementById('displayDate').innerText = displayDateString;
-    document.getElementById('seasonLabel').innerText = `${year} Season`;
+    document.getElementById('seasonLabel').innerText = `${selectedDate.getFullYear()} Season`;
 }
 
 async function fetchData(action, params = "") {
@@ -338,8 +372,9 @@ async function updateDashboard() {
     if(indicator) indicator.classList.add('animate-ping');
 
     let gameData = null;
+    const selectedYear = selectedDate.getFullYear();
     for (const code of TEAM_CODES) {
-        const testGameId = `${dateString}${code}0${year}`;
+        const testGameId = `${dateString}${code}0${selectedYear}`;
         const data = await fetchData('game', `&gameId=${testGameId}`);
         if (data && data.result && data.result.relatedGames) {
             gameData = data;
@@ -449,10 +484,31 @@ document.getElementById('langSelector').addEventListener('change', (e) => {
     updateDashboard();
 });
 
+// Date Selector change event listener
+document.getElementById('dateSelector').addEventListener('change', (e) => {
+    const val = e.target.value; // "YYYY-MM-DD"
+    if (val) {
+        selectedDate = new Date(val);
+        dateString = getFormattedDate(selectedDate);
+        applyTranslations();
+        updateDashboard();
+    }
+});
+
+// Initialize Date Picker input string
+function initDatePicker() {
+    const picker = document.getElementById('dateSelector');
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    picker.value = `${yyyy}-${mm}-${dd}`;
+}
+
 window.onload = function() {
+    initDatePicker();
     applyTranslations();
     updateDashboard();
-    setInterval(updateDashboard, 15000); // 15초마다 갱신
+    setInterval(updateDashboard, 15000); // 15초마다 자동 갱신
 }
 </script>
 </body>
