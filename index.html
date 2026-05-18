@@ -250,7 +250,8 @@
                     </div>
                 </div>
                 <div class="flex items-center space-x-2 text-blue-300 font-bold italic text-sm">
-                    <span id="displayDate">경기 로딩에는 시간이 걸릴 수 있습니다...</span>
+                    <!-- KBO LEAGUE 텍스트가 번역 변수에 맞게 다국어로 동적 변환되도록 태그와 데이터 속성 추가 -->
+                    <span id="displayDate" data-i18n="subTitle">경기 로딩에는 시간이 걸릴 수 있습니다...</span>
                 </div>
                 <div class="accent-bar"></div>
             </div>
@@ -322,7 +323,6 @@
 const today = new Date();
 let selectedDate = new Date();
 let dateString = getFormattedDate(selectedDate);
-const displayDateString = `KBO LEAGUE`;
 
 function getFormattedDate(date) {
     const year = date.getFullYear();
@@ -334,6 +334,7 @@ function getFormattedDate(date) {
 const I18N = {
     ko: {
         headerTitle: "국전야구",
+        subTitle: "경기 로딩에는 시간이 걸릴 수 있습니다...",
         syncText: "LIVE",
         loading: "실시간 데이터를 동기화 중입니다...",
         standingTitle: "실시간 순위",
@@ -351,6 +352,7 @@ const I18N = {
     },
     en: {
         headerTitle: "Gukjeon Baseball",
+        subTitle: "Loading games may take some time...",
         syncText: "LIVE",
         loading: "Syncing real-time data...",
         standingTitle: "Live Standings",
@@ -368,8 +370,9 @@ const I18N = {
     },
     zh: {
         headerTitle: "国展棒球",
+        subTitle: "加载比赛可能需要一些时间...",
         syncText: "LIVE",
-        loading: "正在同步实时数据...",
+        loading: "正在同步实时 data...",
         standingTitle: "实时排名",
         rank: "排名",
         team: "球队",
@@ -385,6 +388,7 @@ const I18N = {
     },
     ja: {
         headerTitle: "クッジョン野球",
+        subTitle: "試合の読み込みに時間がかかる場合があります...",
         syncText: "LIVE",
         loading: " データを同期중...",
         standingTitle: "リアルタイム順位",
@@ -527,7 +531,6 @@ function applyTranslations() {
         const key = el.getAttribute('data-i18n');
         if (I18N[currentLang][key]) el.innerText = I18N[currentLang][key];
     });
-    document.getElementById('displayDate').innerText = displayDateString;
     document.getElementById('seasonLabel').innerText = `${selectedDate.getFullYear()} Season`;
     updateDateDisplayLabel();
 }
@@ -677,7 +680,7 @@ window.onload = function() {
     initDateLabel();
     applyTranslations();
     updateDashboard();
-    setInterval(updateDashboard, 5000); // 15초마다 자동 갱신
+    setInterval(updateDashboard, 15000); // 15초마다 자동 갱신
 }
 </script>
 </body>
