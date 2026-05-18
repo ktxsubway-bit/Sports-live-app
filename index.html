@@ -67,8 +67,8 @@
             transform: translateY(-1px);
         }
 
-        /* Iframe Modal Styles */
-        #liveModal {
+        /* Iframe Modal & Custom Date Picker Styles */
+        #liveModal, #dateModal {
             display: none;
             position: fixed;
             top: 0;
@@ -79,11 +79,19 @@
             z-index: 9999;
             backdrop-filter: blur(8px);
         }
+        
+        /* 모달 안의 콘텐츠를 정중앙에 고정시키기 위한 Flex Box 레이아웃 */
+        .modal-align-wrapper {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
         .modal-content {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            position: relative;
             width: 95%;
             max-width: 1200px;
             height: 85vh;
@@ -92,6 +100,22 @@
             overflow: hidden;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
+        
+        /* 날짜 모달용 전용 디자인 */
+        .date-modal-card {
+            position: relative;
+            width: 100%;
+            max-width: 448px; /* max-w-md */
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
         .close-modal {
             position: absolute;
             top: 20px;
@@ -111,28 +135,50 @@
         }
         .close-modal:hover { background: rgba(255, 255, 255, 0.3); }
 
-        /* Date Input Styling */
+        /* 날짜 창 닫기용 검정 테두리 스타일 */
+        .close-modal-dark {
+            color: #1e293b;
+            background: #f1f5f9;
+        }
+        .close-modal-dark:hover { background: #e2e8f0; }
+
+        /* Date Input Container */
         .date-input-container {
+            position: relative;
             display: inline-flex;
             align-items: center;
             background: rgba(255, 255, 255, 0.12);
             border: 1.5px solid rgba(255, 255, 255, 0.3);
             border-radius: 8px;
-            padding: 4px 10px;
+            padding: 6px 14px;
             transition: all 0.2s;
+            user-select: none;
+            cursor: pointer;
         }
         .date-input-container:hover {
             border-color: rgba(255, 255, 255, 0.6);
             background: rgba(255, 255, 255, 0.18);
         }
-        .date-picker {
-            background: transparent;
-            color: white;
+        
+        .date-display-text {
             font-weight: bold;
             font-size: 13px;
-            outline: none;
-            cursor: pointer;
-            color-scheme: dark;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Custom Selector Options Scroll Styles */
+        .scroll-select-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .scroll-select-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .scroll-select-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
         }
     </style>
 </head>
@@ -141,8 +187,49 @@
 <!-- Iframe Modal Container -->
 <div id="liveModal">
     <div class="close-modal" onclick="closeLiveModal()">&times;</div>
-    <div class="modal-content">
-        <iframe id="liveFrame" src="" class="w-full h-full border-0" allowfullscreen></iframe>
+    <div class="modal-align-wrapper">
+        <div class="modal-content">
+            <iframe id="liveFrame" src="" class="w-full h-full border-0" allowfullscreen></iframe>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Date Picker Modal -->
+<div id="dateModal">
+    <div class="modal-align-wrapper">
+        <div class="date-modal-card">
+            <div class="close-modal close-modal-dark" onclick="closeDateModal()">&times;</div>
+            <h3 class="text-lg font-black text-slate-800 mb-6 flex items-center justify-between border-b pb-3 pr-10">
+                <span id="modalDateTitle">날짜 선택 (Year - Month - Day)</span>
+            </h3>
+            
+            <!-- 연 월 일 선택 필드 그리드 -->
+            <div class="grid grid-cols-3 gap-3 mb-6">
+                <!-- 연도 선택 -->
+                <div class="flex flex-col">
+                    <span class="text-[10px] font-black text-slate-400 mb-2 uppercase">연도 (Year)</span>
+                    <select id="modalYear" class="border border-slate-200 bg-slate-50 p-2.5 rounded-xl font-bold text-sm focus:outline-none focus:border-blue-500"></select>
+                </div>
+                
+                <!-- 월 선택 -->
+                <div class="flex flex-col">
+                    <span class="text-[10px] font-black text-slate-400 mb-2 uppercase">월 (Month)</span>
+                    <select id="modalMonth" class="border border-slate-200 bg-slate-50 p-2.5 rounded-xl font-bold text-sm focus:outline-none focus:border-blue-500" onchange="populateDays()"></select>
+                </div>
+                
+                <!-- 일 선택 -->
+                <div class="flex flex-col">
+                    <span class="text-[10px] font-black text-slate-400 mb-2 uppercase">일 (Day)</span>
+                    <select id="modalDay" class="border border-slate-200 bg-slate-50 p-2.5 rounded-xl font-bold text-sm focus:outline-none focus:border-blue-500"></select>
+                </div>
+            </div>
+
+            <!-- 버튼 영역 -->
+            <div class="flex space-x-3 mt-auto">
+                <button onclick="closeDateModal()" class="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition text-sm">취소 (Cancel)</button>
+                <button onclick="confirmDateSelection()" class="flex-1 py-3 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 transition text-sm shadow-lg shadow-blue-200">확인 (Select)</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -154,9 +241,12 @@
                     <h1 class="text-2xl font-black tracking-tight flex items-center" data-i18n="headerTitle">
                         국전야구
                     </h1>
-                    <!-- 날짜 선택기 추가 -->
-                    <div class="date-input-container">
-                        <input type="date" id="dateSelector" class="date-picker">
+                    <!-- 날짜 선택 박스 -->
+                    <div class="date-input-container" onclick="openDateModal()">
+                        <span class="date-display-text">
+                            <span>📅</span>
+                            <span id="dateValueText">LOADING...</span>
+                        </span>
                     </div>
                 </div>
                 <div class="flex items-center space-x-2 text-blue-300 font-bold italic text-sm">
@@ -228,7 +318,7 @@
 </main>
 
 <script>
-// 오늘 날짜 전역 변수 선언 및 초기화 (ReferenceError 해결)
+// 오늘 날짜 전역 변수 선언 및 초기화
 const today = new Date();
 let selectedDate = new Date();
 let dateString = getFormattedDate(selectedDate);
@@ -303,11 +393,11 @@ const I18N = {
         win: "勝",
         loss: "敗",
         wpct: "勝率",
-        rankLoading: "順位読み込み中",
+        rankLoading: "順位読み込み중",
         errorMsg: "데이터 지연 중...",
         matchLabel: "KBO リーグ試合",
         beforeMatch: "試合前",
-        noGames: "選択された日付に試合予定はありません。",
+        noGames: "選択された日付에 試合予定はありません。",
         viewLive: "ライブ中継"
     }
 };
@@ -321,7 +411,7 @@ const TEAM_CONFIG = {
     'OB': { name: {ko:'두산', en:'Doosan', zh:'斗山', ja:'斗山'}, color: '#131230' },
     'SK': { name: {ko:'SSG', en:'SSG', zh:'SSG', ja:'SSG'}, color: '#CE0E2D' },
     'NC': { name: {ko:'NC', en:'NC', zh:'NC', ja:'NC'}, color: '#071D3D' },
-    'HH': { name: {ko:'한화', en:'Hanwha', zh:'韩화', ja:'ハンファ'}, color: '#FF6600' },
+    'HH': { name: {ko:'한화', en:'Hanwha', zh:'한화', ja:'ハンファ'}, color: '#FF6600' },
     'LT': { name: {ko:'롯데', en:'Lotte', zh:'乐天', ja:'ロッテ'}, color: '#041E42' },
     'KT': { name: {ko:'KT', en:'KT', zh:'KT', ja:'KT'}, color: '#000000' },
     'WO': { name: {ko:'키움', en:'Kiwoom', zh:'英雄', ja:'キウム'}, color: '#820024' }
@@ -347,6 +437,91 @@ function closeLiveModal() {
     document.body.style.overflow = 'auto';
 }
 
+// Custom Date Modal Functions
+function openDateModal() {
+    const modal = document.getElementById('dateModal');
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+    
+    // 현재 선택된 날짜의 년/월/일 값으로 모달 셀렉터 초기화
+    populateYearSelector();
+    populateMonthSelector();
+    populateDays();
+    
+    document.getElementById('modalYear').value = selectedDate.getFullYear();
+    document.getElementById('modalMonth').value = selectedDate.getMonth() + 1;
+    document.getElementById('modalDay').value = selectedDate.getDate();
+}
+
+function closeDateModal() {
+    const modal = document.getElementById('dateModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+function populateYearSelector() {
+    const yearSelect = document.getElementById('modalYear');
+    yearSelect.innerHTML = '';
+    const currentYear = new Date().getFullYear();
+    // 2024년부터 내년까지 선택 가능하게 제공
+    for (let y = currentYear + 1; y >= 2024; y--) {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y + '년';
+        yearSelect.appendChild(opt);
+    }
+}
+
+function populateMonthSelector() {
+    const monthSelect = document.getElementById('modalMonth');
+    monthSelect.innerHTML = '';
+    for (let m = 1; m <= 12; m++) {
+        const opt = document.createElement('option');
+        opt.value = m;
+        opt.textContent = m + '월';
+        monthSelect.appendChild(opt);
+    }
+}
+
+function populateDays() {
+    const year = parseInt(document.getElementById('modalYear').value) || new Date().getFullYear();
+    const month = parseInt(document.getElementById('modalMonth').value) || 1;
+    const daySelect = document.getElementById('modalDay');
+    
+    const prevSelectedDay = parseInt(daySelect.value) || 1;
+    daySelect.innerHTML = '';
+    
+    // 월별 마지막 날 구하기
+    const lastDay = new Date(year, month, 0).getDate();
+    
+    for (let d = 1; d <= lastDay; d++) {
+        const opt = document.createElement('option');
+        opt.value = d;
+        opt.textContent = d + '일';
+        daySelect.appendChild(opt);
+    }
+    
+    // 이전에 선택한 일수가 마지막 일수보다 크면 마지막 일수로 맞춤
+    if (prevSelectedDay <= lastDay) {
+        daySelect.value = prevSelectedDay;
+    } else {
+        daySelect.value = lastDay;
+    }
+}
+
+function confirmDateSelection() {
+    const year = parseInt(document.getElementById('modalYear').value);
+    const month = parseInt(document.getElementById('modalMonth').value) - 1; // 0-based
+    const day = parseInt(document.getElementById('modalDay').value);
+    
+    selectedDate = new Date(year, month, day);
+    dateString = getFormattedDate(selectedDate);
+    
+    applyTranslations();
+    updateDashboard();
+    closeDateModal();
+}
+
 function applyTranslations() {
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
@@ -354,6 +529,15 @@ function applyTranslations() {
     });
     document.getElementById('displayDate').innerText = displayDateString;
     document.getElementById('seasonLabel').innerText = `${selectedDate.getFullYear()} Season`;
+    updateDateDisplayLabel();
+}
+
+// 사용자 화면의 날짜 텍스트를 업데이트하는 함수
+function updateDateDisplayLabel() {
+    const yyyy = selectedDate.getFullYear();
+    const mm = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(selectedDate.getDate()).padStart(2, '0');
+    document.getElementById('dateValueText').innerText = `${yyyy}-${mm}-${dd}`;
 }
 
 async function fetchData(action, params = "") {
@@ -484,31 +668,16 @@ document.getElementById('langSelector').addEventListener('change', (e) => {
     updateDashboard();
 });
 
-// Date Selector change event listener
-document.getElementById('dateSelector').addEventListener('change', (e) => {
-    const val = e.target.value; // "YYYY-MM-DD"
-    if (val) {
-        selectedDate = new Date(val);
-        dateString = getFormattedDate(selectedDate);
-        applyTranslations();
-        updateDashboard();
-    }
-});
-
-// Initialize Date Picker input string
-function initDatePicker() {
-    const picker = document.getElementById('dateSelector');
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    picker.value = `${yyyy}-${mm}-${dd}`;
+// 초기화 시 오늘 날짜 라벨 구성
+function initDateLabel() {
+    updateDateDisplayLabel();
 }
 
 window.onload = function() {
-    initDatePicker();
+    initDateLabel();
     applyTranslations();
     updateDashboard();
-    setInterval(updateDashboard, 15000); // 15초마다 자동 갱신
+    setInterval(updateDashboard, 5000); // 15초마다 자동 갱신
 }
 </script>
 </body>
