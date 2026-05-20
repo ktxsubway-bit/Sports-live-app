@@ -531,7 +531,7 @@
             try {
                 await setDoc(docRef, payload);
                 localStorage.setItem(`voted_${activeWeekId}_${category}`, "true");
-                showToast(`[${name}] 선수를 추천 완료했으며, 내 첫 투표 1표가 자동으로 실시간 반영되었어!`);
+                showToast(`[${name}] 선수를 추천 완료했으며, 내 첫 투표 1표가 자동으로 실시간 반영되었어요!`);
                 resetForm();
             } catch (err) {
                 console.error("Nominating Error:", err);
@@ -547,7 +547,7 @@
 
             const hasVotedThisCat = localStorage.getItem(`voted_${activeWeekId}_${category}`) !== null;
             if (hasVotedThisCat) {
-                showToast("이번 주 해당 부문은 이미 투표가 완료되었어!");
+                showToast("이번 주 해당 부문은 이미 투표가 완료되었습니다.");
                 return;
             }
 
@@ -562,7 +562,7 @@
                 });
 
                 localStorage.setItem(`voted_${activeWeekId}_${category}`, "true");
-                showToast("실시간 투표가 성공적으로 파이어베이스 클라우드에 반영되었어!");
+                showToast("실시간 투표가 성공적으로 클라우드에 반영되었습니다!");
             } catch (err) {
                 console.error("Voting Error:", err);
                 showCustomAlert("투표 실패", "표를 전송하는 도중 에러가 발생했습니다.");
