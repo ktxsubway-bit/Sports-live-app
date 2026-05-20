@@ -92,16 +92,16 @@
                 <div>
                     <h3 class="text-xl md:text-2xl font-black flex items-center gap-2">
                         <span class="w-1.5 h-6 bg-emerald-500 rounded-full"></span>
-                        실시간 부문별 투표율 현황
+                        실시간 부분별 투표율 현황
                     </h3>
-                    <p class="text-slate-400 text-xs md:text-sm mt-1">현재 각 부문에서 가장 높은 투표율을 받은 선수를 표시합니다.</p>
+                    <p class="text-slate-400 text-xs md:text-sm mt-1">현재 각 부분에서 가장 높은 투표율을 받은 선수를 표시합니다.</p>
                 </div>
             </div>
 
             <!-- 타자 / 투수 / 수비 전광판 3단 그리드 -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
-                <!-- 1. 타자 부문 투표 전광판 -->
+                <!-- 1. 타자 부분 투표 전광판 -->
                 <div class="glass-panel rounded-2xl p-5 flex flex-col justify-between space-y-4 border border-red-500/20">
                     <div class="flex justify-between items-center pb-2 border-b border-slate-800">
                         <span class="bg-red-500 text-white text-xs font-black px-2.5 py-1 rounded">타자</span>
@@ -112,7 +112,7 @@
                     </div>
                 </div>
 
-                <!-- 2. 투수 부문 투표 전광판 -->
+                <!-- 2. 투수 부분 투표 전광판 -->
                 <div class="glass-panel rounded-2xl p-5 flex flex-col justify-between space-y-4 border border-blue-500/20">
                     <div class="flex justify-between items-center pb-2 border-b border-slate-800">
                         <span class="bg-blue-500 text-white text-xs font-black px-2.5 py-1 rounded">투수</span>
@@ -123,7 +123,7 @@
                     </div>
                 </div>
 
-                <!-- 3. 수비 부문 투표 전광판 -->
+                <!-- 3. 수비 부분 투표 전광판 -->
                 <div class="glass-panel rounded-2xl p-5 flex flex-col justify-between space-y-4 border border-amber-500/20">
                     <div class="flex justify-between items-center pb-2 border-b border-slate-800">
                         <span class="bg-amber-500 text-white text-xs font-black px-2.5 py-1 rounded">수비</span>
@@ -160,7 +160,7 @@
                     <!-- 입력 정보 -->
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                         <div>
-                            <label class="block text-xs font-bold text-slate-400 mb-1.5">선택 부문</label>
+                            <label class="block text-xs font-bold text-slate-400 mb-1.5">선택 부분</label>
                             <select id="nominate-category" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
                                 <option value="batter">타자 (BATTER)</option>
                                 <option value="pitcher">투수 (PITCHER)</option>
@@ -412,7 +412,7 @@
             renderLivePoll(voteData);
         }
 
-        // 실시간 전광판 렌더링 (그 전에도 각 부문 득표율 1위 선수를 왕관 마크와 함께 가장 상단에 고정 노출)
+        // 실시간 전광판 렌더링 (그 전에도 각 부분 득표율 1위 선수를 왕관 마크와 함께 가장 상단에 고정 노출)
         function renderLivePoll(items) {
             const categories = ['batter', 'pitcher', 'defense'];
             
@@ -420,10 +420,10 @@
                 const listEl = document.getElementById(`${cat}-candidates-list`);
                 const totalEl = document.getElementById(`${cat}-total-votes`);
 
-                // 부문별 아이템 필터링
+                // 부분별 아이템 필터링
                 const catItems = items.filter(item => item.category === cat);
                 
-                // 해당 부문 총 투표수 계산
+                // 해당 부분 총 투표수 계산
                 const totalVotes = catItems.reduce((acc, curr) => acc + (curr.votes || 0), 0);
                 totalEl.innerText = `총 ${totalVotes}표`;
 
@@ -508,7 +508,7 @@
 
             showLoading();
 
-            // 부문(category)과 선수 이름(name)이 똑같은 기존 선수가 있는지 대조합니다.
+            // 부분(category)과 선수 이름(name)이 똑같은 기존 선수가 있는지 대조합니다.
             const existingPlayer = voteData.find(
                 item => item.category === category && item.name.toLowerCase() === name.toLowerCase()
             );
@@ -564,7 +564,7 @@
 
             const hasVotedThisCat = localStorage.getItem(`voted_${activeWeekId}_${category}`) !== null;
             if (hasVotedThisCat) {
-                showToast("이번 주 해당 부문은 이미 투표가 완료되었습니다.");
+                showToast("이번 주 해당 부분은 이미 투표가 완료되었습니다.");
                 return;
             }
 
