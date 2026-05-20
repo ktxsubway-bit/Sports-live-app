@@ -160,7 +160,7 @@
                     <!-- 입력 정보 -->
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                         <div>
-                            <label class="block text-xs font-bold text-slate-400 mb-1.5">선택 부분</label>
+                            <label class="block text-xs font-bold text-slate-400 mb-1.5">선택 부문</label>
                             <select id="nominate-category" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
                                 <option value="batter">타자 (BATTER)</option>
                                 <option value="pitcher">투수 (PITCHER)</option>
@@ -313,7 +313,7 @@
             activeWeekId = cycle.weekId;
             deadlineTime = cycle.deadline;
 
-            document.getElementById('locked-week-display').value = `${formatWeekText(activeWeekId)} (현재 주 자동 고정)`;
+            document.getElementById('locked-week-display').value = `${formatWeekText(activeWeekId)}`;
             document.getElementById('header-week-label').innerText = `현재 진행: ${formatWeekText(activeWeekId)}`;
 
             startCountdown();
@@ -494,7 +494,7 @@
             });
         }
 
-        // 신규 후보 등록 (이번 주만 허용)
+        // 신규 후보 등록 (이번 주만 허용, 다중 후보 등록이 언제든지 무제한 가능합니다)
         window.submitNomination = async function(event) {
             event.preventDefault();
 
@@ -505,12 +505,6 @@
             const team = document.getElementById('nominate-team').value.trim().toUpperCase();
             const record = document.getElementById('nominate-record').value.trim();
             const comment = document.getElementById('nominate-comment').value.trim();
-
-            const hasVotedThisCat = localStorage.getItem(`voted_${activeWeekId}_${category}`) !== null;
-            if (hasVotedThisCat) {
-                showCustomAlert("추천 불가", `이번 주 해당 부문(${category.toUpperCase()})은 이미 투표를 완료했어! 다른 부문의 후보를 등록하거나 다음 주에 참여해줘.`);
-                return;
-            }
 
             showLoading();
 
@@ -530,7 +524,6 @@
 
             try {
                 await setDoc(docRef, payload);
-                localStorage.setItem(`voted_${activeWeekId}_${category}`, "true");
                 showToast(`[${name}] 선수를 추천 완료했으며, 내 첫 투표 1표가 자동으로 실시간 반영되었어요!`);
                 resetForm();
             } catch (err) {
