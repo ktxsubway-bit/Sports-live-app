@@ -564,7 +564,7 @@
 
             const hasVotedThisCat = localStorage.getItem(`voted_${activeWeekId}_${category}`) !== null;
             if (hasVotedThisCat) {
-                showToast("이번 주 해당 부분은 이미 투표가 완료되었습니다.");
+                showToast("이미 투표하셨습니다.");
                 return;
             }
 
