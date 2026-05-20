@@ -494,7 +494,7 @@
             });
         }
 
-        // 신규 후보 등록 (이번 주만 허용, 다중 후보 등록이 언제든지 무제한 가능합니다)
+        // 신규 후보 등록 (이미 등록된 동일 이름의 선수가 있다면 해당 문서의 득표수를 합칩니다)
         window.submitNomination = async function(event) {
             event.preventDefault();
 
@@ -508,29 +508,53 @@
 
             showLoading();
 
-            const docId = `vote_${activeWeekId}_${category}_${team}_${Date.now()}`;
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'weekly_votes', docId);
+            // 부문(category)과 선수 이름(name)이 똑같은 기존 선수가 있는지 대조합니다.
+            const existingPlayer = voteData.find(
+                item => item.category === category && item.name.toLowerCase() === name.toLowerCase()
+            );
 
-            const payload = {
-                week: activeWeekId,
-                category: category,
-                name: name,
-                team: team,
-                record: record,
-                comment: comment,
-                votes: 1, // 최초 1표 기본 제공
-                voters: [currentUser.uid]
-            };
+            if (existingPlayer) {
+                // 이미 동일한 선수가 등록되어 있다면 신규 문서를 만들지 않고 기존 문서의 득표수만 increment(+1) 처리합니다.
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'weekly_votes', existingPlayer.docId);
+                try {
+                    await updateDoc(docRef, {
+                        votes: increment(1),
+                        voters: arrayUnion(currentUser.uid)
+                    });
+                    showToast(`[${name}] 선수는 이미 후보군에 등록되어 있어 투표수 1표가 자동으로 합산되어 반영되었습니다!`);
+                    resetForm();
+                } catch (err) {
+                    console.error("Voting Exist Error:", err);
+                    showCustomAlert("오류 발생", "기존 선수의 추천수를 올리는 과정에서 실패했습니다.");
+                } finally {
+                    hideLoading();
+                }
+            } else {
+                // 동일한 이름을 가진 선수가 없을 때만 새롭게 신규 문서를 만듭니다.
+                const docId = `vote_${activeWeekId}_${category}_${team}_${Date.now()}`;
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'weekly_votes', docId);
 
-            try {
-                await setDoc(docRef, payload);
-                showToast(`[${name}] 선수를 추천 완료했으며, 내 첫 투표 1표가 자동으로 실시간 반영되었어요!`);
-                resetForm();
-            } catch (err) {
-                console.error("Nominating Error:", err);
-                showCustomAlert("등록 실패", "후보 정보를 동기화하지 못했습니다. 보안규칙 권한을 확인해주세요.");
-            } finally {
-                hideLoading();
+                const payload = {
+                    week: activeWeekId,
+                    category: category,
+                    name: name,
+                    team: team,
+                    record: record,
+                    comment: comment,
+                    votes: 1, // 최초 1표 기본 제공
+                    voters: [currentUser.uid]
+                };
+
+                try {
+                    await setDoc(docRef, payload);
+                    showToast(`[${name}] 선수를 새로 추천 완료했으며, 내 첫 투표 1표가 자동으로 실시간 반영되었어요!`);
+                    resetForm();
+                } catch (err) {
+                    console.error("Nominating Error:", err);
+                    showCustomAlert("등록 실패", "후보 정보를 동기화하지 못했습니다. 보안규칙 권한을 확인해주세요.");
+                } finally {
+                    hideLoading();
+                }
             }
         };
 
