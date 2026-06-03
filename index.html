@@ -3,638 +3,682 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>위키베이스볼 - 이주의 KBO MVP</title>
-    <!-- Tailwind CSS CDN -->
+    <title>국전야구 - KBO 실시간 중계</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚾</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800;900&display=swap');
-        body {
-            font-family: 'Pretendard', sans-serif;
-            background-color: #0b132b;
-            color: #f4f4f9;
+        body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #f8fafc; overflow-x: hidden; }
+        .gukjeon-blue { background-color: #004593; }
+        .score-box { font-variant-numeric: tabular-nums; letter-spacing: -1px; }
+        
+        .team-logo { 
+            width: 52px; height: 52px; border-radius: 14px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: 900; color: white; box-shadow: 0 4px 12px -2px rgba(0,0,0,0.15);
         }
-        .glass-panel {
-            background: rgba(30, 41, 59, 0.75);
-            backdrop-filter: blur(14px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+        
+        @keyframes pulse-light {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
         }
-        .text-gradient {
-            background: linear-gradient(135deg, #34d399, #60a5fa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .loading-pulse { animation: pulse-light 1.5s infinite; }
+        
+        .lang-select-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
         }
-        /* 프로그레스 바 게이지 애니메이션 */
-        .progress-bar-fill {
-            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        .lang-select {
+            background: transparent;
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            font-size: 13px;
+            padding: 6px 32px 6px 12px;
+            border-radius: 8px;
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+            transition: all 0.2s;
+        }
+        .lang-select:hover { border-color: rgba(255, 255, 255, 0.7); background: rgba(255, 255, 255, 0.05); }
+        .lang-select option { color: #333; background: white; }
+        .lang-arrow {
+            position: absolute; right: 10px; pointer-events: none;
+            width: 12px; height: 12px; fill: white;
+        }
+        .accent-bar {
+            height: 4px;
+            background: #3b82f6;
+            width: 60%;
+            border-radius: 0 2px 2px 0;
+            margin-top: 8px;
+        }
+
+        .btn-live-nav {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .btn-live-nav:hover {
+            background: #2563eb;
+            border-color: #3b82f6;
+            transform: translateY(-1px);
+        }
+
+        /* Iframe Modal & Custom Date Picker Styles */
+        #liveModal, #dateModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 9999;
+            backdrop-filter: blur(8px);
+        }
+        
+        /* 모달 안의 콘텐츠를 정중앙에 고정시키기 위한 Flex Box 레이아웃 */
+        .modal-align-wrapper {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal-content {
+            position: relative;
+            width: 95%;
+            max-width: 1200px;
+            height: 85vh;
+            background: #000;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* 날짜 모달용 전용 디자인 */
+        .date-modal-card {
+            position: relative;
+            width: 100%;
+            max-width: 448px; /* max-w-md */
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            font-size: 30px;
+            cursor: pointer;
+            z-index: 10001;
+            background: rgba(255, 255, 255, 0.1);
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: 0.2s;
+        }
+        .close-modal:hover { background: rgba(255, 255, 255, 0.3); }
+
+        /* 날짜 창 닫기용 검정 테두리 스타일 */
+        .close-modal-dark {
+            color: #1e293b;
+            background: #f1f5f9;
+        }
+        .close-modal-dark:hover { background: #e2e8f0; }
+
+        /* Date Input Container */
+        .date-input-container {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 6px 14px;
+            transition: all 0.2s;
+            user-select: none;
+            cursor: pointer;
+        }
+        .date-input-container:hover {
+            border-color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.18);
+        }
+        
+        .date-display-text {
+            font-weight: bold;
+            font-size: 13px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Custom Selector Options Scroll Styles */
+        .scroll-select-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .scroll-select-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .scroll-select-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
         }
     </style>
 </head>
-<body class="min-h-screen pb-16">
+<body class="text-slate-900">
 
-    <!-- 로딩 화면 인디케이터 -->
-    <div id="loading-overlay" class="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-md flex flex-col justify-center items-center transition-opacity duration-300">
-        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-emerald-500 mb-4"></div>
-        <p class="text-emerald-400 font-bold tracking-wider animate-pulse">Now Loading...</p>
-    </div>
-
-    <!-- 헤더 영역 -->
-    <header class="border-b border-slate-800 bg-slate-900/80 sticky top-0 z-50 backdrop-blur-md">
-        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-            <h1 class="text-xl md:text-2xl font-black tracking-wider flex items-center gap-2">
-                <i class="fa-solid fa-baseball text-emerald-400 animate-spin" style="animation-duration: 3s"></i>
-                <span>위키<span class="text-emerald-400">베이스볼</span></span>
-            </h1>
-            <div class="flex items-center gap-3">
-                <span id="user-status-badge" class="hidden sm:inline-block text-[10px] bg-slate-800/80 text-emerald-400 font-semibold px-2.5 py-1 rounded border border-slate-700">라이브 동기화 활성</span>
-                <button onclick="scrollToSection('nominate-section')" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black px-4 py-2 rounded-lg transition duration-200 text-sm flex items-center gap-1 shadow-lg shadow-emerald-500/20">
-                    <i class="fa-solid fa-plus-circle"></i> 신규 후보 등록
-                </button>
-            </div>
+<!-- Iframe Modal Container -->
+<div id="liveModal">
+    <div class="close-modal" onclick="closeLiveModal()">&times;</div>
+    <div class="modal-align-wrapper">
+        <div class="modal-content">
+            <iframe id="liveFrame" src="" class="w-full h-full border-0" allowfullscreen></iframe>
         </div>
-    </header>
+    </div>
+</div>
 
-    <!-- 메인 컨텐츠 -->
-    <main class="max-w-6xl mx-auto px-4 mt-6 space-y-10">
-
-        <!-- 인트로 및 실시간 카운트다운 배너 -->
-        <section class="glass-panel rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-2xl border-l-4 border-emerald-500">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-                <div class="md:col-span-2 space-y-3">
-                    <span class="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 text-xs font-bold px-3 py-1 rounded-full border border-emerald-500/30">
-                        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                        <span id="header-week-label">이번 주 투표 진행 중</span>
-                    </span>
-                    <h2 class="text-2xl md:text-4xl font-black leading-tight">
-                        모두와 함께 결정하는 <br>
-                        <span class="text-gradient">실시간 이주의 MVP</span>
-                    </h2>
-                    <p class="text-slate-400 text-xs md:text-sm leading-relaxed">
-                        '신규 후보 등록' 버튼을 눌러 이번주 KBO MVP를 투표하세요!
-                    </p>
+<!-- Custom Date Picker Modal -->
+<div id="dateModal">
+    <div class="modal-align-wrapper">
+        <div class="date-modal-card">
+            <div class="close-modal close-modal-dark" onclick="closeDateModal()">&times;</div>
+            <h3 class="text-lg font-black text-slate-800 mb-6 flex items-center justify-between border-b pb-3 pr-10">
+                <span id="modalDateTitle">날짜 선택 (Year - Month - Day)</span>
+            </h3>
+            
+            <!-- 연 월 일 선택 필드 그리드 -->
+            <div class="grid grid-cols-3 gap-3 mb-6">
+                <!-- 연도 선택 -->
+                <div class="flex flex-col">
+                    <span class="text-[10px] font-black text-slate-400 mb-2 uppercase">연도 (Year)</span>
+                    <select id="modalYear" class="border border-slate-200 bg-slate-50 p-2.5 rounded-xl font-bold text-sm focus:outline-none focus:border-blue-500"></select>
                 </div>
                 
-                <!-- 카운트다운 타이머 박스 -->
-                <div class="bg-slate-950/50 rounded-2xl p-5 border border-slate-800 text-center space-y-2">
-                    <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider">이번 주 투표 마감까지</div>
-                    <div id="countdown-timer" class="text-2xl md:text-3xl font-black text-amber-400 tracking-widest font-mono">
-                        00일 00:00:00
-                    </div>
-                    <div class="text-[10px] text-slate-500">매주 일요일 12:00 PM 마감</div>
+                <!-- 월 선택 -->
+                <div class="flex flex-col">
+                    <span class="text-[10px] font-black text-slate-400 mb-2 uppercase">월 (Month)</span>
+                    <select id="modalMonth" class="border border-slate-200 bg-slate-50 p-2.5 rounded-xl font-bold text-sm focus:outline-none focus:border-blue-500" onchange="populateDays()"></select>
                 </div>
-            </div>
-        </section>
-
-        <!-- 실시간 투표 전광판 (실시간 투표율 계산) -->
-        <section class="space-y-6">
-            <div class="flex flex-col sm:flex-row justify-between sm:items-end gap-2">
-                <div>
-                    <h3 class="text-xl md:text-2xl font-black flex items-center gap-2">
-                        <span class="w-1.5 h-6 bg-emerald-500 rounded-full"></span>
-                        실시간 부분별 투표율 현황
-                    </h3>
-                    <p class="text-slate-400 text-xs md:text-sm mt-1">현재 각 부분에서 가장 높은 투표율을 받은 선수를 표시합니다.</p>
-                </div>
-            </div>
-
-            <!-- 타자 / 투수 / 수비 전광판 3단 그리드 -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
-                <!-- 1. 타자 부분 투표 전광판 -->
-                <div class="glass-panel rounded-2xl p-5 flex flex-col justify-between space-y-4 border border-red-500/20">
-                    <div class="flex justify-between items-center pb-2 border-b border-slate-800">
-                        <span class="bg-red-500 text-white text-xs font-black px-2.5 py-1 rounded">타자</span>
-                        <span id="batter-total-votes" class="text-xs text-slate-400 font-semibold">총 0표</span>
-                    </div>
-                    <div id="batter-candidates-list" class="space-y-4 min-h-[220px]">
-                        <!-- 후보군이 여기에 동적으로 추가됨 -->
-                    </div>
+                <!-- 일 선택 -->
+                <div class="flex flex-col">
+                    <span class="text-[10px] font-black text-slate-400 mb-2 uppercase">일 (Day)</span>
+                    <select id="modalDay" class="border border-slate-200 bg-slate-50 p-2.5 rounded-xl font-bold text-sm focus:outline-none focus:border-blue-500"></select>
                 </div>
-
-                <!-- 2. 투수 부분 투표 전광판 -->
-                <div class="glass-panel rounded-2xl p-5 flex flex-col justify-between space-y-4 border border-blue-500/20">
-                    <div class="flex justify-between items-center pb-2 border-b border-slate-800">
-                        <span class="bg-blue-500 text-white text-xs font-black px-2.5 py-1 rounded">투수</span>
-                        <span id="pitcher-total-votes" class="text-xs text-slate-400 font-semibold">총 0표</span>
-                    </div>
-                    <div id="pitcher-candidates-list" class="space-y-4 min-h-[220px]">
-                        <!-- 후보군이 여기에 동적으로 추가됨 -->
-                    </div>
-                </div>
-
-                <!-- 3. 수비 부분 투표 전광판 -->
-                <div class="glass-panel rounded-2xl p-5 flex flex-col justify-between space-y-4 border border-amber-500/20">
-                    <div class="flex justify-between items-center pb-2 border-b border-slate-800">
-                        <span class="bg-amber-500 text-white text-xs font-black px-2.5 py-1 rounded">수비</span>
-                        <span id="defense-total-votes" class="text-xs text-slate-400 font-semibold">총 0표</span>
-                    </div>
-                    <div id="defense-candidates-list" class="space-y-4 min-h-[220px]">
-                        <!-- 후보군이 여기에 동적으로 추가됨 -->
-                    </div>
-                </div>
-
             </div>
-        </section>
 
-        <!-- 후보 등록 폼 (이번 주 강제 고정) -->
-        <section id="nominate-section" class="scroll-mt-24">
-            <div class="glass-panel rounded-2xl p-6 md:p-8 relative overflow-hidden">
-                <div class="absolute right-0 top-0 translate-x-12 -translate-y-6 opacity-5 text-9xl font-black select-none">투표하기</div>
-                <h3 class="text-xl md:text-2xl font-black mb-2 flex items-center gap-2">
-                    <i class="fa-solid fa-baseball-bat-ball text-emerald-400"></i>
-                    응원하는 선수가 없나요? 이번 주 후보 추천하기
-                </h3>
-                <p class="text-slate-400 text-xs md:text-sm mb-6">마음에 드는 선수를 투표 할 수 있습니다.</p>
-
-                <form id="nomination-form" onsubmit="submitNomination(event)" class="space-y-6">
-                    <!-- 주차 정보 자동 주입 (사용자는 변경 불가) -->
-                    <div class="max-w-md">
-                        <label class="block text-xs font-bold text-slate-400 mb-1.5 uppercase tracking-wider">등록 대상 주차</label>
-                        <div class="flex items-center gap-2">
-                            <input type="text" id="locked-week-display" readonly
-                                   class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-emerald-400 font-bold focus:outline-none cursor-not-allowed">
-                        </div>
-                    </div>
-
-                    <!-- 입력 정보 -->
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-400 mb-1.5">선택 부분</label>
-                            <select id="nominate-category" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
-                                <option value="batter">타자 (BATTER)</option>
-                                <option value="pitcher">투수 (PITCHER)</option>
-                                <option value="defense">수비 (DEFENSE)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-400 mb-1.5">선수명</label>
-                            <input type="text" id="nominate-name" required placeholder="예: 최형우" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-400 mb-1.5">소속 구단</label>
-                            <input type="text" id="nominate-team" required placeholder="예: 삼성" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-400 mb-1.5">이번 주 핵심 기록</label>
-                            <input type="text" id="nominate-record" required placeholder="예: 4홈런 10타점" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 mb-1.5">선정 이유 / 추천 코멘트</label>
-                        <textarea id="nominate-comment" required placeholder="이번 주 경기 흐름을 완전히 바꾸는 최고의 멀티 홈런포를 쏘아 올림!" rows="2" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500 resize-none"></textarea>
-                    </div>
-
-                    <!-- 추천 버튼 -->
-                    <div class="flex justify-end gap-3">
-                        <button type="button" onclick="resetForm()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-5 py-2.5 rounded-lg transition text-sm">
-                            초기화
-                        </button>
-                        <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black px-6 py-2.5 rounded-lg transition shadow-lg shadow-emerald-500/20 text-sm">
-                            <i class="fa-solid fa-fire-flame-curved mr-1"></i> 후보 등록 완료.
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- 커스텀 알림/컨펌 모달 -->
-    <div id="confirm-modal" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex justify-center items-center p-4">
-        <div class="glass-panel max-w-sm w-full p-6 rounded-2xl shadow-2xl border border-slate-700">
-            <h4 class="text-lg font-bold text-white mb-2" id="modal-title">알림</h4>
-            <p class="text-sm text-slate-300 mb-6" id="modal-desc"></p>
-            <div class="flex justify-end gap-2">
-                <button id="modal-btn-cancel" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-4 py-2 rounded-lg text-sm">취소</button>
-                <button id="modal-btn-confirm" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-4 py-2 rounded-lg text-sm">확인</button>
+            <!-- 버튼 영역 -->
+            <div class="flex space-x-3 mt-auto">
+                <button onclick="closeDateModal()" class="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition text-sm">취소 (Cancel)</button>
+                <button onclick="confirmDateSelection()" class="flex-1 py-3 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 transition text-sm shadow-lg shadow-blue-200">확인 (Select)</button>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- 커스텀 알림/모달 토스트 -->
-    <div id="custom-toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-emerald-500 text-slate-950 font-bold px-5 py-3 rounded-xl shadow-2xl flex items-center gap-2">
-        <i class="fa-solid fa-circle-check"></i>
-        <span id="toast-message">완료되었습니다!</span>
-    </div>
+<nav class="gukjeon-blue text-white shadow-lg">
+    <div class="max-w-6xl mx-auto px-6 py-4">
+        <div class="flex flex-col md:flex-row md:justify-between md:items-end">
+            <div class="space-y-1">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <h1 class="text-2xl font-black tracking-tight flex items-center" data-i18n="headerTitle">
+                        국전야구
+                    </h1>
+                    <!-- 날짜 선택 박스 -->
+                    <div class="date-input-container" onclick="openDateModal()">
+                        <span class="date-display-text">
+                            <span>📅</span>
+                            <span id="dateValueText">LOADING...</span>
+                        </span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2 text-blue-300 font-bold italic text-sm">
+                    <span id="displayDate">경기 로딩에는 시간이 걸릴 수 있습니다...</span>
+                </div>
+                <div class="accent-bar"></div>
+            </div>
 
-    <!-- Firebase SDK 및 메인 로직 실행 -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, updateDoc, increment, arrayUnion, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+            <div class="flex flex-col items-end mt-4 md:mt-0 space-y-3">
+                <div class="flex items-center space-x-3">
+                    <!-- Iframe 모달을 여는 버튼 -->
+                    <button onclick="openLiveModal()" class="btn-live-nav px-4 py-1.5 rounded-lg text-[12px] font-black tracking-tighter uppercase flex items-center space-x-2">
+                        <span class="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
+                        <span data-i18n="viewLive">실시간 중계보기</span>
+                    </button>
 
-        // 파이어베이스 설정 정보
-        const firebaseConfig = {
-            apiKey: "AIzaSyACNmBFhvFAmGdW_awXs4ZnnKSlD12SuXs",
-            authDomain: "kbaseball-905f5.firebaseapp.com",
-            projectId: "kbaseball-905f5",
-            storageBucket: "kbaseball-905f5.firebasestorage.app",
-            messagingSenderId: "313369723416",
-            appId: "1:313369723416:web:22ead822f69f7984fcb96d",
-            measurementId: "G-88C5TXLL9B"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'kbaseball-905f5';
-
-        let voteData = []; 
-        let currentUser = null;
-        let activeWeekId = "";
-        let deadlineTime = null;
-        let countdownInterval = null;
-
-        /**
-         * 서울 시간대(KST, UTC+9)를 기준으로 마감 주기 및 대상 주차 계산
-         */
-        function calculateWeeklyCycle() {
-            const now = new Date();
-            // 현재 기기의 절대 시간을 기반으로 세계 표준시(UTC) 산출 후, 서울 시간대(+9시간) 가상 객체 생성
-            const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
-            const kstNow = new Date(utcTime + (9 * 3600000));
-            
-            const day = kstNow.getDay(); // 0: 일요일, 1: 월요일 ...
-            let daysToSunday = 0;
-            
-            if (day === 0) {
-                if (kstNow.getHours() >= 12) {
-                    daysToSunday = 7; // 일요일 정오가 넘었으면 다음주 일요일 정오가 마감선
-                } else {
-                    daysToSunday = 0; // 일요일 정오 전이면 오늘 정오가 마감선
-                }
-            } else {
-                daysToSunday = 7 - day;
-            }
-
-            // 가상 서울 날짜 객체에서 마감 기한일인 일요일 설정
-            const kstSunday = new Date(kstNow);
-            kstSunday.setDate(kstNow.getDate() + daysToSunday);
-            kstSunday.setHours(12, 0, 0, 0); 
-
-            // 가상 서울 날짜를 기준으로 주차 구하기
-            const year = kstSunday.getFullYear();
-            const weekNo = getWeekNo(kstSunday);
-            const weekId = `${year}-W${String(weekNo).padStart(2, '0')}`;
-
-            // 가상 서울 날짜의 밀리초를 역산하여 실제 절대 마감 시간 생성
-            const absoluteDeadlineUtc = kstSunday.getTime() - (9 * 3600000);
-            const deadlineDate = new Date(absoluteDeadlineUtc);
-
-            return {
-                weekId,
-                deadline: deadlineDate
-            };
-        }
-
-        function getWeekNo(d) {
-            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-            const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-            return weekNo;
-        }
-
-        function formatWeekText(weekStr) {
-            if(!weekStr) return '';
-            const parts = weekStr.split('-W');
-            if(parts.length === 2) {
-                return `${parts[0]}년 ${parseInt(parts[1])}주차`;
-            }
-            return weekStr;
-        }
-
-        // 초기화 로직
-        window.addEventListener('load', async () => {
-            const cycle = calculateWeeklyCycle();
-            activeWeekId = cycle.weekId;
-            deadlineTime = cycle.deadline;
-
-            document.getElementById('locked-week-display').value = `${formatWeekText(activeWeekId)}`;
-            document.getElementById('header-week-label').innerText = `현재 진행: ${formatWeekText(activeWeekId)}`;
-
-            startCountdown();
-
-            try {
-                await signInAnonymously(auth);
-            } catch (err) {
-                console.error("Auth Error:", err);
-                hideLoading();
-                showCustomAlert("서버 연동 오류", "연결에 실패했습니다. 다시 시도해주세요.");
-            }
-        });
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                document.getElementById('user-status-badge').innerText = `서버 연동: (${user.uid.substring(0,6)})`;
-                setupFirestoreListener();
-            }
-        });
-
-        // 실시간 마감 타이머 구동
-        function startCountdown() {
-            if(countdownInterval) clearInterval(countdownInterval);
-
-            const updateTimer = () => {
-                const now = new Date().getTime();
-                const diff = deadlineTime.getTime() - now;
-
-                if (diff <= 0) {
-                    document.getElementById('countdown-timer').innerText = "00일 00:00:00 (마감)";
-                    // 마감 시 새로운 주로 교체
-                    const nextCycle = calculateWeeklyCycle();
-                    activeWeekId = nextCycle.weekId;
-                    deadlineTime = nextCycle.deadline;
-                    document.getElementById('locked-week-display').value = `${formatWeekText(activeWeekId)} (현재 주 자동 고정)`;
-                    document.getElementById('header-week-label').innerText = `현재 진행: ${formatWeekText(activeWeekId)}`;
-                    return;
-                }
-
-                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-                const dText = String(days).padStart(2, '0');
-                const hText = String(hours).padStart(2, '0');
-                const mText = String(minutes).padStart(2, '0');
-                const sText = String(seconds).padStart(2, '0');
-
-                document.getElementById('countdown-timer').innerText = `${dText}일 ${hText}:${mText}:${sText}`;
-            };
-
-            updateTimer();
-            countdownInterval = setInterval(updateTimer, 1000);
-        }
-
-        // 실시간 클라우드 DB 연동 리스너 (RULE 1 & 2 완전 준수)
-        function setupFirestoreListener() {
-            if(!currentUser) return;
-
-            const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'weekly_votes');
-
-            onSnapshot(collectionRef, (snapshot) => {
-                voteData = [];
-                snapshot.forEach(async (document) => {
-                    const data = document.data();
+                    <div class="lang-select-wrapper">
+                        <select id="langSelector" class="lang-select font-bold">
+                            <option value="ko">한국어</option>
+                            <option value="en">English</option>
+                            <option value="zh">简体中文</option>
+                            <option value="ja">日本語</option>
+                        </select>
+                        <svg class="lang-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                    </div>
                     
-                    // 서울 시간대 기준으로 이번 주차가 아니면(즉, 투표 주차가 끝나면) 자동으로 DB에서 완벽 소거
-                    if (data.week && data.week !== activeWeekId) {
-                        try {
-                            const oldDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'weekly_votes', document.id);
-                            await deleteDoc(oldDocRef);
-                        } catch (err) {
-                            console.error("이전 주차 데이터 자동 삭제 실패:", err);
-                        }
-                    } else {
-                        voteData.push({
-                            docId: document.id,
-                            ...data
-                        });
-                    }
-                });
+                    <div class="hidden md:flex items-center space-x-2 bg-black/20 px-3 py-1.5 rounded-full border border-white/10">
+                        <div id="syncIndicator" class="w-2.5 h-2.5 bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)]"></div>
+                        <span id="syncText" class="text-[10px] font-bold uppercase tracking-widest" data-i18n="syncText">LIVE</span>
+                    </div>
+                </div>
+                <span id="updateTime" class="text-[10px] text-white/50 font-black tracking-tighter uppercase">SYNC: LOADING...</span>
+            </div>
+        </div>
+    </div>
+</nav>
 
-                renderDashboard();
-                hideLoading();
-            }, (error) => {
-                console.error("Firestore Loading Failed:", error);
-                hideLoading();
-                showCustomAlert("동기화 오류", "실시간 정보를 읽는 중에 실패가 발생했습니다.");
-            });
+<main class="max-w-6xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6 mt-2">
+    <div class="lg:col-span-2">
+        <div id="gameGrid" class="grid grid-cols-1 gap-4">
+            <div id="loadingPlaceholder" class="bg-white p-16 rounded-3xl border border-slate-200 shadow-sm text-center text-slate-400 font-bold loading-pulse" data-i18n="loading">
+                실시간 데이터를 동기화 중입니다...
+            </div>
+        </div>
+    </div>
+
+    <div class="lg:col-span-1">
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden sticky top-6">
+            <div class="p-5 border-b bg-slate-50/50 flex justify-between items-center">
+                <span class="font-black text-sm text-slate-700 tracking-tight" data-i18n="standingTitle">실시간 순위</span>
+                <span id="seasonLabel" class="px-2 py-0.5 bg-slate-200 text-slate-500 rounded text-[9px] font-bold uppercase">Season</span>
+            </div>
+            <table class="w-full text-xs text-center">
+                <thead>
+                    <tr class="bg-white text-[10px] text-slate-400 border-b border-slate-100">
+                        <th class="py-4 pl-6 text-left" data-i18n="rank">순위</th>
+                        <th class="py-4 text-left" data-i18n="team">팀</th>
+                        <th class="py-4" data-i18n="win">승</th>
+                        <th class="py-4" data-i18n="loss">패</th>
+                        <th class="py-4 pr-6 text-right" data-i18n="wpct">승률</th>
+                    </tr>
+                </thead>
+                <tbody id="rankBody" class="font-bold text-slate-600">
+                    <tr><td colspan="5" class="py-20 text-slate-300" data-i18n="rankLoading">순위 정보 로딩 중</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<script>
+// 오늘 날짜 전역 변수 선언 및 초기화
+const today = new Date();
+let selectedDate = new Date();
+let dateString = getFormattedDate(selectedDate);
+const displayDateString = `KBO LEAGUE`;
+
+function getFormattedDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}${month}${day}`;
+}
+
+const I18N = {
+    ko: {
+        headerTitle: "국전야구",
+        syncText: "LIVE",
+        loading: "실시간 데이터를 동기화 중입니다...",
+        standingTitle: "실시간 순위",
+        rank: "순위",
+        team: "팀",
+        win: "승",
+        loss: "패",
+        wpct: "승률",
+        rankLoading: "순위 정보 로딩 중",
+        errorMsg: "데이터 수신 지연 중...",
+        matchLabel: "KBO LEAGUE MATCH",
+        beforeMatch: "경기전",
+        noGames: "선택하신 날짜에는 예정된 경기가 없습니다.",
+        viewLive: "실시간 중계보기"
+    },
+    en: {
+        headerTitle: "Gukjeon Baseball",
+        syncText: "LIVE",
+        loading: "Syncing real-time data...",
+        standingTitle: "Live Standings",
+        rank: "RK",
+        team: "TEAM",
+        win: "W",
+        loss: "L",
+        wpct: "PCT",
+        rankLoading: "Loading standings...",
+        errorMsg: "Data delay...",
+        matchLabel: "KBO LEAGUE MATCH",
+        beforeMatch: "Scheduled",
+        noGames: "No games scheduled for the selected date.",
+        viewLive: "WATCH LIVE"
+    },
+    zh: {
+        headerTitle: "国展棒球",
+        syncText: "LIVE",
+        loading: "正在同步实时数据...",
+        standingTitle: "实时排名",
+        rank: "排名",
+        team: "球队",
+        win: "胜",
+        loss: "负",
+        wpct: "胜率",
+        rankLoading: "排名加载中",
+        errorMsg: "数据接收延迟...",
+        matchLabel: "KBO 联盟比赛",
+        beforeMatch: "赛前",
+        noGames: "您选择的日期没有比赛日程。",
+        viewLive: "观看直播"
+    },
+    ja: {
+        headerTitle: "クッジョン野球",
+        syncText: "LIVE",
+        loading: " データを同期중...",
+        standingTitle: "リアルタイム順位",
+        rank: "順位",
+        team: "팀",
+        win: "勝",
+        loss: "敗",
+        wpct: "勝率",
+        rankLoading: "順位読み込み중",
+        errorMsg: "데이터 지연 중...",
+        matchLabel: "KBO リーグ試合",
+        beforeMatch: "試合前",
+        noGames: "選択された日付에 試合予定はありません。",
+        viewLive: "ライブ中継"
+    }
+};
+
+let currentLang = 'ko';
+
+const TEAM_CONFIG = {
+    'HT': { name: {ko:'KIA', en:'KIA', zh:'起亚', ja:'KIA'}, color: '#EA0029' },
+    'SS': { name: {ko:'삼성', en:'Samsung', zh:'삼성', ja:'サムスン'}, color: '#074CA1' },
+    'LG': { name: {ko:'LG', en:'LG', zh:'LG', ja:'LG'}, color: '#C30452' },
+    'OB': { name: {ko:'두산', en:'Doosan', zh:'斗山', ja:'斗山'}, color: '#131230' },
+    'SK': { name: {ko:'SSG', en:'SSG', zh:'SSG', ja:'SSG'}, color: '#CE0E2D' },
+    'NC': { name: {ko:'NC', en:'NC', zh:'NC', ja:'NC'}, color: '#071D3D' },
+    'HH': { name: {ko:'한화', en:'Hanwha', zh:'한화', ja:'ハンファ'}, color: '#FF6600' },
+    'LT': { name: {ko:'롯데', en:'Lotte', zh:'乐天', ja:'ロッテ'}, color: '#041E42' },
+    'KT': { name: {ko:'KT', en:'KT', zh:'KT', ja:'KT'}, color: '#000000' },
+    'WO': { name: {ko:'키움', en:'Kiwoom', zh:'英雄', ja:'キウム'}, color: '#820024' }
+};
+
+const TEAM_CODES = ['SSHT', 'OBHH', 'LTKT', 'SKNC', 'LGWO', 'HTSS', 'HHOB', 'KTLT', 'NCSK', 'WOLG'];
+const GAS_URL = "https://script.google.com/macros/s/AKfycbypqVsdzpcs74iQjtRgbcXeAt3H569Jnw-HqodOaSrZRdOpTzQgh03DDtHcJFEByl3o/exec";
+
+// Modal Functions
+function openLiveModal() {
+    const modal = document.getElementById('liveModal');
+    const iframe = document.getElementById('liveFrame');
+    iframe.src = "https://superpangtv.com/sportstv";
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeLiveModal() {
+    const modal = document.getElementById('liveModal');
+    const iframe = document.getElementById('liveFrame');
+    iframe.src = "";
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+// Custom Date Modal Functions
+function openDateModal() {
+    const modal = document.getElementById('dateModal');
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+    
+    // 현재 선택된 날짜의 년/월/일 값으로 모달 셀렉터 초기화
+    populateYearSelector();
+    populateMonthSelector();
+    populateDays();
+    
+    document.getElementById('modalYear').value = selectedDate.getFullYear();
+    document.getElementById('modalMonth').value = selectedDate.getMonth() + 1;
+    document.getElementById('modalDay').value = selectedDate.getDate();
+}
+
+function closeDateModal() {
+    const modal = document.getElementById('dateModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+function populateYearSelector() {
+    const yearSelect = document.getElementById('modalYear');
+    yearSelect.innerHTML = '';
+    const currentYear = new Date().getFullYear();
+    // 2024년부터 내년까지 선택 가능하게 제공
+    for (let y = currentYear + 1; y >= 2024; y--) {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y + '년';
+        yearSelect.appendChild(opt);
+    }
+}
+
+function populateMonthSelector() {
+    const monthSelect = document.getElementById('modalMonth');
+    monthSelect.innerHTML = '';
+    for (let m = 1; m <= 12; m++) {
+        const opt = document.createElement('option');
+        opt.value = m;
+        opt.textContent = m + '월';
+        monthSelect.appendChild(opt);
+    }
+}
+
+function populateDays() {
+    const year = parseInt(document.getElementById('modalYear').value) || new Date().getFullYear();
+    const month = parseInt(document.getElementById('modalMonth').value) || 1;
+    const daySelect = document.getElementById('modalDay');
+    
+    const prevSelectedDay = parseInt(daySelect.value) || 1;
+    daySelect.innerHTML = '';
+    
+    // 월별 마지막 날 구하기
+    const lastDay = new Date(year, month, 0).getDate();
+    
+    for (let d = 1; d <= lastDay; d++) {
+        const opt = document.createElement('option');
+        opt.value = d;
+        opt.textContent = d + '일';
+        daySelect.appendChild(opt);
+    }
+    
+    // 이전에 선택한 일수가 마지막 일수보다 크면 마지막 일수로 맞춤
+    if (prevSelectedDay <= lastDay) {
+        daySelect.value = prevSelectedDay;
+    } else {
+        daySelect.value = lastDay;
+    }
+}
+
+function confirmDateSelection() {
+    const year = parseInt(document.getElementById('modalYear').value);
+    const month = parseInt(document.getElementById('modalMonth').value) - 1; // 0-based
+    const day = parseInt(document.getElementById('modalDay').value);
+    
+    selectedDate = new Date(year, month, day);
+    dateString = getFormattedDate(selectedDate);
+    
+    applyTranslations();
+    updateDashboard();
+    closeDateModal();
+}
+
+function applyTranslations() {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (I18N[currentLang][key]) el.innerText = I18N[currentLang][key];
+    });
+    document.getElementById('displayDate').innerText = displayDateString;
+    document.getElementById('seasonLabel').innerText = `${selectedDate.getFullYear()} Season`;
+    updateDateDisplayLabel();
+}
+
+// 사용자 화면의 날짜 텍스트를 업데이트하는 함수
+function updateDateDisplayLabel() {
+    const yyyy = selectedDate.getFullYear();
+    const mm = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(selectedDate.getDate()).padStart(2, '0');
+    document.getElementById('dateValueText').innerText = `${yyyy}-${mm}-${dd}`;
+}
+
+async function fetchData(action, params = "") {
+    try {
+        const url = `${GAS_URL}?action=${action}${params}&t=${Date.now()}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Network response was not ok');
+        return await response.json();
+    } catch (e) {
+        return null;
+    }
+}
+
+async function updateDashboard() {
+    const indicator = document.getElementById('syncIndicator');
+    if(indicator) indicator.classList.add('animate-ping');
+
+    let gameData = null;
+    const selectedYear = selectedDate.getFullYear();
+    for (const code of TEAM_CODES) {
+        const testGameId = `${dateString}${code}0${selectedYear}`;
+        const data = await fetchData('game', `&gameId=${testGameId}`);
+        if (data && data.result && data.result.relatedGames) {
+            gameData = data;
+            break;
         }
+    }
 
-        function renderDashboard() {
-            // 이제 이번 주차 데이터만 동기화되므로 바로 실시간 전광판만 렌더링
-            renderLivePoll(voteData);
-        }
+    if (gameData && gameData.result && gameData.result.relatedGames) {
+        renderGames(gameData.result.relatedGames.games);
+    } else {
+        document.getElementById('gameGrid').innerHTML = `<div class="bg-white p-16 rounded-3xl text-center text-slate-400 font-bold">${I18N[currentLang].noGames}</div>`;
+    }
 
-        // 실시간 전광판 렌더링 (그 전에도 각 부분 득표율 1위 선수를 왕관 마크와 함께 가장 상단에 고정 노출)
-        function renderLivePoll(items) {
-            const categories = ['batter', 'pitcher', 'defense'];
-            
-            categories.forEach(cat => {
-                const listEl = document.getElementById(`${cat}-candidates-list`);
-                const totalEl = document.getElementById(`${cat}-total-votes`);
+    const rankData = await fetchData('rankings');
+    if (rankData && Array.isArray(rankData)) renderRankings(rankData);
 
-                // 부분별 아이템 필터링
-                const catItems = items.filter(item => item.category === cat);
-                
-                // 해당 부분 총 투표수 계산
-                const totalVotes = catItems.reduce((acc, curr) => acc + (curr.votes || 0), 0);
-                totalEl.innerText = `총 ${totalVotes}표`;
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString(currentLang === 'ko' ? 'ko-KR' : 'en-US');
+    document.getElementById('updateTime').innerText = `SYNC: ${timeStr}`;
+    setTimeout(() => { if(indicator) indicator.classList.remove('animate-ping') }, 1000);
+}
 
-                if (catItems.length === 0) {
-                    listEl.innerHTML = `
-                        <div class="flex flex-col items-center justify-center h-full py-12 text-center text-slate-500">
-                            <i class="fa-solid fa-user-plus text-3xl mb-2 opacity-40"></i>
-                            <p class="text-xs">아직 사람들이 추천한 선수가 없습니다.</p>
-                            <p class="text-[10px] mt-0.5">아래 폼에서 첫 선수를 추천해주세요.</p>
+function renderGames(games) {
+    const grid = document.getElementById('gameGrid');
+    if (!grid || !games || games.length === 0) return;
+
+    const uniqueGames = games.filter((v, i, a) => a.findIndex(t => t.gameId === v.gameId) === i);
+
+    const html = uniqueGames.map(game => {
+        const homeConf = TEAM_CONFIG[game.homeTeamCode] || { name: {ko: game.homeTeamName}, color: '#999' };
+        const awayConf = TEAM_CONFIG[game.awayTeamCode] || { name: {ko: game.awayTeamName}, color: '#999' };
+        
+        const homeName = homeConf.name[currentLang] || homeConf.name['ko'];
+        const awayName = awayConf.name[currentLang] || awayConf.name['ko'];
+
+        let channels = (game.broadChannel || 'LIVE').split('^').join(', ');
+        let status = game.statusInfo || I18N[currentLang].beforeMatch;
+
+        return `
+            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm transition-all hover:shadow-xl hover:border-blue-100 overflow-hidden group">
+                <div class="flex justify-between items-center mb-6">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">${I18N[currentLang].matchLabel}</span>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase border border-blue-100">${game.stadium || 'KBO'}</span>
+                        <span class="text-[10px] font-black text-slate-500 bg-slate-100 px-3 py-1 rounded-full uppercase">${channels}</span>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center score-box px-4">
+                    <div class="flex flex-col items-center w-24">
+                        <div class="team-logo mb-3 transform group-hover:scale-110 transition-transform" style="background-color: ${awayConf.color}">${game.awayTeamCode}</div>
+                        <span class="font-black text-slate-800 text-sm text-center leading-tight">${awayName}</span>
+                    </div>
+
+                    <div class="flex flex-col items-center flex-1">
+                        <div class="flex items-center space-x-6 md:space-x-12">
+                            <span class="text-5xl md:text-6xl font-black ${game.awayTeamScore > game.homeTeamScore ? 'text-slate-900' : 'text-slate-400'}">${game.awayTeamScore}</span>
+                            <div class="flex flex-col items-center">
+                                <span class="bg-red-500 text-white px-4 py-1.5 rounded-full text-[10px] font-black shadow-lg shadow-red-200">${status}</span>
+                            </div>
+                            <span class="text-5xl md:text-6xl font-black ${game.homeTeamScore > game.awayTeamScore ? 'text-slate-900' : 'text-slate-400'}">${game.homeTeamScore}</span>
                         </div>
-                    `;
-                    return;
-                }
+                    </div>
 
-                // 득표순 정렬 (최고 득표자가 가장 위에 올라가서 투표율이 잘 노출되도록 배치)
-                catItems.sort((a, b) => b.votes - a.votes);
+                    <div class="flex flex-col items-center w-24">
+                        <div class="team-logo mb-3 transform group-hover:scale-110 transition-transform" style="background-color: ${homeConf.color}">${game.homeTeamCode}</div>
+                        <span class="font-black text-slate-800 text-sm text-center leading-tight">${homeName}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    grid.innerHTML = html;
+}
 
-                // 이미 이 카테고리에 투표했는지 체크
-                const hasVotedThisCat = localStorage.getItem(`voted_${activeWeekId}_${cat}`) !== null;
+function renderRankings(rankings) {
+    const rankBody = document.getElementById('rankBody');
+    if (!rankBody) return;
+    
+    rankBody.innerHTML = rankings.slice(0, 10).map(team => {
+        const teamKey = Object.keys(TEAM_CONFIG).find(k => TEAM_CONFIG[k].name.ko === team.name);
+        const teamConf = TEAM_CONFIG[teamKey] || { name: {ko: team.name}, color: '#999' };
+        const teamDisplayName = teamConf.name[currentLang] || team.name;
 
-                listEl.innerHTML = catItems.map((player, idx) => {
-                    const voteRate = totalVotes > 0 ? Math.round((player.votes / totalVotes) * 100) : 0;
-                    const isLeader = idx === 0 && player.votes > 0; // 최다 득표자(Leader) 판정
+        return `
+            <tr class="border-b border-slate-50 hover:bg-blue-50/30 transition group">
+                <td class="py-4 pl-6 text-left">
+                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-lg ${parseInt(team.rank) <= 5 ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'} font-black text-[11px]">${team.rank}</span>
+                </td>
+                <td class="py-4 text-left font-black text-slate-700">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-1.5 h-1.5 rounded-full" style="background-color: ${teamConf.color}"></div>
+                        <span>${teamDisplayName}</span>
+                    </div>
+                </td>
+                <td class="py-4 font-bold text-slate-500">${team.w || 0}</td>
+                <td class="py-4 font-bold text-slate-500">${team.l || 0}</td>
+                <td class="py-4 pr-6 text-right font-black text-slate-900">${team.wpct || '0.000'}</td>
+            </tr>
+        `;
+    }).join('');
+}
 
-                    return `
-                        <div class="bg-slate-950/40 p-3.5 rounded-xl border ${isLeader ? 'border-emerald-500/50 shadow-lg shadow-emerald-500/10' : 'border-slate-800'} space-y-3 relative overflow-hidden">
-                            ${isLeader ? `
-                            <div class="absolute -right-3 -top-3 w-12 h-12 bg-amber-500/10 rounded-full flex items-center justify-center border border-amber-500/20">
-                                <i class="fa-solid fa-crown text-amber-400 text-xs"></i>
-                            </div>
-                            ` : ''}
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="text-xs font-semibold text-slate-400">${player.team}</span>
-                                        ${isLeader ? '<span class="bg-amber-400/10 text-amber-400 text-[10px] font-bold px-1.5 rounded border border-amber-400/20">득표 1위</span>' : ''}
-                                    </div>
-                                    <h4 class="text-lg font-black text-white mt-0.5">${player.name}</h4>
-                                </div>
-                                <div class="text-right">
-                                    <span class="text-lg font-black text-emerald-400">${voteRate}%</span>
-                                    <div class="text-[10px] text-slate-500 mt-0.5">${player.votes}표</div>
-                                </div>
-                            </div>
+document.getElementById('langSelector').addEventListener('change', (e) => {
+    currentLang = e.target.value;
+    applyTranslations();
+    updateDashboard();
+});
 
-                            <div class="text-xs text-slate-300 italic bg-slate-900/50 p-2.5 rounded border border-slate-800">
-                                "${player.record}"
-                            </div>
+// 초기화 시 오늘 날짜 라벨 구성
+function initDateLabel() {
+    updateDateDisplayLabel();
+}
 
-                            <!-- 실시간 득표율 게이지 바 -->
-                            <div class="space-y-1">
-                                <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
-                                    <div class="progress-bar-fill bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full" style="width: ${voteRate}%"></div>
-                                </div>
-                            </div>
-
-                            <div class="flex justify-between items-center pt-1">
-                                <span class="text-[10px] text-slate-500 truncate max-w-[150px]">${player.comment}</span>
-                                <button onclick="window.castVote('${player.docId}', '${cat}')" 
-                                    ${hasVotedThisCat ? 'disabled' : ''} 
-                                    class="${hasVotedThisCat ? 'bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed' : 'bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold'} text-[11px] px-3 py-1.5 rounded-lg transition duration-150 flex items-center gap-1">
-                                    <i class="fa-solid fa-thumbs-up"></i> ${hasVotedThisCat ? '투표완료' : '투표하기'}
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            });
-        }
-
-        // 신규 후보 등록 (이미 등록된 동일 이름의 선수가 있다면 해당 문서의 득표수를 합칩니다)
-        window.submitNomination = async function(event) {
-            event.preventDefault();
-
-            if (!currentUser) return;
-
-            const category = document.getElementById('nominate-category').value;
-            const name = document.getElementById('nominate-name').value.trim();
-            const team = document.getElementById('nominate-team').value.trim().toUpperCase();
-            const record = document.getElementById('nominate-record').value.trim();
-            const comment = document.getElementById('nominate-comment').value.trim();
-
-            showLoading();
-
-            // 부분(category)과 선수 이름(name)이 똑같은 기존 선수가 있는지 대조합니다.
-            const existingPlayer = voteData.find(
-                item => item.category === category && item.name.toLowerCase() === name.toLowerCase()
-            );
-
-            if (existingPlayer) {
-                // 이미 동일한 선수가 등록되어 있다면 신규 문서를 만들지 않고 기존 문서의 득표수만 increment(+1) 처리합니다.
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'weekly_votes', existingPlayer.docId);
-                try {
-                    await updateDoc(docRef, {
-                        votes: increment(1),
-                        voters: arrayUnion(currentUser.uid)
-                    });
-                    showToast(`[${name}] 선수는 이미 후보군에 등록되어 있어 투표수 1표가 자동으로 합산되어 반영되었습니다!`);
-                    resetForm();
-                } catch (err) {
-                    console.error("Voting Exist Error:", err);
-                    showCustomAlert("오류 발생", "기존 선수의 추천수를 올리는 과정에서 실패했습니다.");
-                } finally {
-                    hideLoading();
-                }
-            } else {
-                // 동일한 이름을 가진 선수가 없을 때만 새롭게 신규 문서를 만듭니다.
-                const docId = `vote_${activeWeekId}_${category}_${team}_${Date.now()}`;
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'weekly_votes', docId);
-
-                const payload = {
-                    week: activeWeekId,
-                    category: category,
-                    name: name,
-                    team: team,
-                    record: record,
-                    comment: comment,
-                    votes: 1, // 최초 1표 기본 제공
-                    voters: [currentUser.uid]
-                };
-
-                try {
-                    await setDoc(docRef, payload);
-                    showToast(`[${name}] 선수를 새로 추천 완료했으며, 내 첫 투표 1표가 자동으로 실시간 반영되었어요!`);
-                    resetForm();
-                } catch (err) {
-                    console.error("Nominating Error:", err);
-                    showCustomAlert("등록 실패", "후보 정보를 동기화하지 못했습니다. 보안규칙 권한을 확인해주세요.");
-                } finally {
-                    hideLoading();
-                }
-            }
-        };
-
-        // 투표 처리 (이번 주만 허용)
-        window.castVote = async function(docId, category) {
-            if (!currentUser) return;
-
-            const hasVotedThisCat = localStorage.getItem(`voted_${activeWeekId}_${category}`) !== null;
-            if (hasVotedThisCat) {
-                showToast("이미 투표하셨습니다.");
-                return;
-            }
-
-            showLoading();
-
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'weekly_votes', docId);
-
-            try {
-                await updateDoc(docRef, {
-                    votes: increment(1),
-                    voters: arrayUnion(currentUser.uid)
-                });
-
-                localStorage.setItem(`voted_${activeWeekId}_${category}`, "true");
-                showToast("실시간 투표가 성공적으로 클라우드에 반영되었습니다!");
-            } catch (err) {
-                console.error("Voting Error:", err);
-                showCustomAlert("투표 실패", "표를 전송하는 도중 에러가 발생했습니다.");
-            } finally {
-                hideLoading();
-            }
-        };
-
-        function showLoading() {
-            document.getElementById('loading-overlay').classList.remove('opacity-0', 'pointer-events-none');
-        }
-
-        function hideLoading() {
-            document.getElementById('loading-overlay').classList.add('opacity-0', 'pointer-events-none');
-        }
-
-        function showCustomAlert(title, desc) {
-            const modal = document.getElementById('confirm-modal');
-            document.getElementById('modal-title').innerText = title;
-            document.getElementById('modal-desc').innerText = desc;
-
-            const cancelBtn = document.getElementById('modal-btn-cancel');
-            const confirmBtn = document.getElementById('modal-btn-confirm');
-
-            cancelBtn.classList.add('hidden'); 
-
-            modal.classList.remove('hidden');
-
-            const handler = () => {
-                modal.classList.add('hidden');
-                confirmBtn.removeEventListener('click', handler);
-            };
-            confirmBtn.addEventListener('click', handler);
-        }
-
-        window.scrollToSection = function(id) {
-            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
-        };
-
-        window.resetForm = function() {
-            document.getElementById('nomination-form').reset();
-        };
-
-        function showToast(msg) {
-            const toast = document.getElementById('custom-toast');
-            document.getElementById('toast-message').innerText = msg;
-
-            toast.classList.remove('translate-y-20', 'opacity-0');
-            toast.classList.add('translate-y-0', 'opacity-100');
-
-            setTimeout(() => {
-                toast.classList.remove('translate-y-0', 'opacity-100');
-                toast.classList.add('translate-y-20', 'opacity-0');
-            }, 3000);
-        }
-    </script>
+window.onload = function() {
+    initDateLabel();
+    applyTranslations();
+    updateDashboard();
+    setInterval(updateDashboard, 5000); // 15초마다 자동 갱신
+}
+</script>
 </body>
 </html>
